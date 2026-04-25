@@ -1,15 +1,17 @@
-// components/layout/navbar.js
-"use client";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { handleLogout } from "@/lib/auth";
 import { Bell, Menu } from "lucide-react";
 import { useState } from "react";
 import AddApplicationModal from "../modals/add-application-modal";
+import useCurrentUser from "@/hooks/use-current-user";
+
 export default function Navbar({ onMobileMenuClick }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const { userName, userEmail } = useCurrentUser();
   const router = useRouter();
+ 
   async function logoutUser() {
     const res = await handleLogout();
     if (res.ok) {
@@ -20,84 +22,82 @@ export default function Navbar({ onMobileMenuClick }) {
 
   return (
     <>
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 md:px-8 py-5 flex items-center justify-between sticky top-0 z-30">
-        <div className="flex items-center gap-x-4">
+      <header className="bg-white border-b border-slate-100 px-4 md:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30">
+        <div className="flex items-center gap-3">
           <button
             onClick={onMobileMenuClick}
-            className="md:hidden p-2 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="md:hidden p-2 rounded-xl hover:bg-slate-100 transition-colors"
           >
-            <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+            <Menu className="w-5 h-5 text-slate-600" />
           </button>
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white md:hidden">
-            Dashboard
-          </h1>
+ 
+          {/* Search bar */}
+          {/* <div className="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-64 hover:border-slate-300 transition-colors">
+            <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
+            <span className="text-sm text-slate-400">Search applications...</span>
+            <span className="ml-auto text-xs text-slate-300 font-medium bg-slate-100 px-1.5 py-0.5 rounded">⌘K</span>
+          </div> */}
         </div>
-
-        <div className="flex items-center gap-x-6">
+ 
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-2xl font-medium text-sm transition-all active:scale-95"
+            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-medium text-sm transition-all active:scale-95 shadow-sm shadow-indigo-200"
           >
-            <span className="text-lg">+</span>
-            Add Application
+            <span className="text-base leading-none">+</span>
+            <span className="hidden sm:inline">Add Application</span>
+            <span className="sm:hidden">Add</span>
           </button>
-          <button className="relative p-2 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700">
-            <Bell className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
+ 
+          <button className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors">
+            <Bell className="w-5 h-5 text-slate-500" />
+            <span className="absolute top-1.5 right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-white">
               3
             </span>
           </button>
-
+ 
           <div className="relative">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-x-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-3xl pr-2 pl-1 py-1"
+              className="flex items-center gap-2.5 hover:bg-slate-50 rounded-xl pr-2 pl-1 py-1 transition-colors border border-transparent hover:border-slate-200"
             >
-              <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-semibold text-lg">
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm">
                 P
               </div>
               <div className="hidden sm:block text-left">
-                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                  Pranshu Srivastava
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  @pranshukodes
-                </p>
+                <p className="text-sm font-semibold text-slate-700 leading-tight">{userName}</p>
+                <p className="text-[11px] text-slate-400 leading-tight">{userEmail}</p>
               </div>
+              <svg className="w-4 h-4 text-slate-400 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
-
+ 
             {dropdownOpen && (
-              <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 text-sm z-50">
-                <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-                  <p className="font-semibold">Pranshu Srivastava</p>
-                  <p className="text-gray-500 text-xs">
-                    pranshukodes@gmail.com
-                  </p>
+              <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 text-sm z-50">
+                <div className="px-4 py-3 border-b border-slate-50">
+                  <p className="font-semibold text-slate-800">{userName}</p>
+                  <p className="text-slate-400 text-xs mt-0.5">{userEmail}</p>
                 </div>
-                <a
-                  href="#"
-                  className="flex px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 items-center gap-x-3"
-                >
-                  👤 Profile
+                <a href="#" className="flex px-4 py-2.5 hover:bg-slate-50 items-center gap-2.5 text-slate-600 transition-colors">
+                  <span>👤</span> Profile
                 </a>
-                <a
-                  href="#"
-                  className="flex px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 items-center gap-x-3"
-                >
-                  ⚙️ Settings
+                <a href="#" className="flex px-4 py-2.5 hover:bg-slate-50 items-center gap-2.5 text-slate-600 transition-colors">
+                  <span>⚙️</span> Settings
                 </a>
-                <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                <div className="border-t border-slate-50 my-1" />
                 <button
                   onClick={logoutUser}
-                  className="flex w-full px-5 py-3 text-red-600 hover:bg-gray-50 dark:hover:bg-gray-700 items-center gap-x-3 font-medium"
+                  className="flex w-full px-4 py-2.5 text-rose-500 hover:bg-rose-50 items-center gap-2.5 font-medium transition-colors"
                 >
-                  ← Logout
+                  <span>←</span> Logout
                 </button>
               </div>
             )}
           </div>
         </div>
       </header>
+ 
       <AddApplicationModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}

@@ -3,7 +3,7 @@ import { useState } from "react";
 import ManualAuth from "./manualauth";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { setAccessToken } from "@/lib/api";
+import { setAccessToken, syncCurrentUser } from "@/lib/api";
 
 export default function AuthScreen() {
   const [mode, setMode] = useState("login");
@@ -22,6 +22,7 @@ export default function AuthScreen() {
       const res = await handleManualLogin({ email, password });
       if(res?.success){
         setAccessToken(res?.data?.accessToken)
+        await syncCurrentUser();
         router.push('/dashboard')
         toast.success("logged in successfully")
       }
