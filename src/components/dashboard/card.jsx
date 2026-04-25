@@ -1,8 +1,7 @@
-// components/ui/card.js
 export default function Card({ children, className = '' }) {
   return (
     <div
-      className={`bg-white dark:bg-gray-800 rounded-3xl shadow-md hover:shadow-xl transition-all duration-300 ${className}`}
+      className={`bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 ${className}`}
     >
       {children}
     </div>
