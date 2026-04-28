@@ -2,6 +2,9 @@ let accessToken = null;
 let currentUserId = null;
 let currentUserName = null;
 let currentUserEmail = null;
+
+const AUTH_REQUEST_TIMEOUT_MS = 8000;
+
 export const setAccessToken = (token) => {
   accessToken = token;
 };
@@ -29,10 +32,26 @@ const extractUserInfo = (payload) => {
   };
 };
 
-export const apiFetch = async (url, options = {}) => {
+const fetchWithTimeout = async (url, options = {}, timeoutMs = AUTH_REQUEST_TIMEOUT_MS) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: options.signal || controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+const extractAccessToken = (payload) => payload?.accessToken 
+
+export const apiFetch = async (url, options = {}, hasRetried = false) => {
   const token = getAccessToken();
 
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     ...options,
     headers: {
       ...(options.headers || {}),
@@ -42,16 +61,15 @@ export const apiFetch = async (url, options = {}) => {
   });
 
   // If access token expired
-  if (res.status === 401) {
+  if (res.status === 401 && !hasRetried) {
     const refreshed = await refreshAccessToken();
 
     if (!refreshed) {
-      window.location.href = "/";
-      return;
+      return res;
     }
 
     // retry original request
-    return apiFetch(url, options);
+    return apiFetch(url, options, true);
   }
 
   return res;
@@ -59,7 +77,7 @@ export const apiFetch = async (url, options = {}) => {
 
 export const refreshAccessToken = async () => {
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/refresh`,
       {
         method: "POST",
@@ -69,12 +87,18 @@ export const refreshAccessToken = async () => {
 
     if (!res.ok) return false;
 
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
+    const token = extractAccessToken(data);
 
-    setAccessToken(data.accessToken);
+    if (!token) {
+      setAccessToken(null);
+      return false;
+    }
 
+    setAccessToken(token);
     return true;
   } catch (err) {
+    setAccessToken(null);
     return false;
   }
 };
