@@ -7,12 +7,12 @@ import FollowUps from "@/components/dashboard/follow-ups";
 import Analytics from "@/components/dashboard/analytics";
 import useCurrentUser from "@/hooks/use-current-user";
 import { useApplications } from "@/context/applications-context";
-
+import useUpcomingFollowups from "@/hooks/use-follow-up";
 export default function DashboardPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { userName } = useCurrentUser();
   const { applications } = useApplications();
-
+  const { followUps } = useUpcomingFollowups();
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       {/* Sidebar */}
@@ -40,7 +40,7 @@ export default function DashboardPage() {
               <ApplicationsTable applications = {applications}/>
             </div>
             <div className="xl:col-span-4">
-              <FollowUps />
+              <FollowUps followUps={followUps} />
             </div>
           </div>
 
