@@ -12,7 +12,7 @@ export default function DashboardPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { userName } = useCurrentUser();
   const { applications } = useApplications();
-  const { followUps } = useUpcomingFollowups();
+  const { followUps, refetchFollowups } = useUpcomingFollowups();
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       {/* Sidebar */}
@@ -20,7 +20,10 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        <Navbar onMobileMenuClick={() => setMobileOpen(true)} />
+        <Navbar
+          onMobileMenuClick={() => setMobileOpen(true)}
+          onApplicationCreated={refetchFollowups}
+        />
 
         <main className="flex-1 overflow-auto p-5 md:p-7 space-y-6 md:ml-[72px] lg:ml-60">
           {/* Page header */}
@@ -37,7 +40,10 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
             <div className="xl:col-span-8">
-              <ApplicationsTable applications = {applications}/>
+              <ApplicationsTable
+                applications={applications}
+                onStatusUpdated={refetchFollowups}
+              />
             </div>
             <div className="xl:col-span-4">
               <FollowUps followUps={followUps} />
