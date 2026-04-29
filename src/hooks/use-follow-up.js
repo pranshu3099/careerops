@@ -1,38 +1,44 @@
 import { getCurrentUserFollowups } from "@/lib/applications";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function useUpcomingFollowups() {
   const [followUps, setFollowUps] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const isMountedRef = useRef(false);
 
-  useEffect(() => {
-    let isMounted = true;
+  const refetchFollowups = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+      const result = await getCurrentUserFollowups();
 
-    const loadFollowups = async () => {
-      try {
-        setIsLoading(true);
-        setError("");
-        const result = await getCurrentUserFollowups();
+      if (!isMountedRef.current) return [];
 
-        if (!isMounted) return;
-        setFollowUps(Array.isArray(result) ? result : []);
-      } catch (err) {
-        if (!isMounted) return;
+      const nextFollowUps = Array.isArray(result) ? result : [];
+      setFollowUps(nextFollowUps);
+      return nextFollowUps;
+    } catch (err) {
+      if (isMountedRef.current) {
         setError(err?.message || "Failed to load followups");
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
       }
-    };
-
-    loadFollowups();
-
-    return () => {
-      isMounted = false;
-    };
+      return [];
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
+    }
   }, []);
 
-  return { followUps, isLoading, error };
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    refetchFollowups();
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [refetchFollowups]);
+
+  return { followUps, isLoading, error, refetchFollowups };
 }
