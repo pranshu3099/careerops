@@ -65,14 +65,16 @@ export const getApplications = async () => {
   throw new Error("Invalid applications response");
 };
 
-
 export const getCurrentUserFollowups = async () => {
-  const response = await apiFetch(`${BACKEND_URL}/applications/upcoming-followups`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await apiFetch(
+    `${BACKEND_URL}/applications/upcoming-followups`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
   const result = await response.json().catch(() => null);
 
   if (!response.ok) {
@@ -82,5 +84,32 @@ export const getCurrentUserFollowups = async () => {
   if (Array.isArray(result)) {
     return result;
   }
+
   throw new Error("Invalid followups response");
+};
+
+export const updateApplicationStatus = async (applicationId, newStatus) => {
+  const response = await apiFetch(
+    `${BACKEND_URL}/applications/${applicationId}/status`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        status: newStatus,
+      }),
+    },
+  );
+  const result = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(getResponseError(result, "Failed to update status"));
+  }
+
+  if (result?.success && result?.data) {
+    return result;
+  }
+
+
+  throw new Error("Invalid status update response");
 };
