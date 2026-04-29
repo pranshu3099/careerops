@@ -3,10 +3,10 @@ import toast from "react-hot-toast";
 import { handleLogout } from "@/lib/auth";
 import { Bell, Menu } from "lucide-react";
 import { useState } from "react";
-import AddApplicationModal from "../modals/add-application-modal";
 import useCurrentUser from "@/hooks/use-current-user";
+import AddApplicationModal from "../modals/add-application-modal";
 
-export default function Navbar({ onMobileMenuClick }) {
+export default function Navbar({ onMobileMenuClick, onApplicationCreated }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const { userName, userEmail } = useCurrentUser();
@@ -101,6 +101,7 @@ export default function Navbar({ onMobileMenuClick }) {
       <AddApplicationModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
+        onApplicationCreated={onApplicationCreated}
       />
     </>
   );
