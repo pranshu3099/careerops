@@ -122,6 +122,7 @@ export default function FollowUpModal({ app, onClose }) {
                   {detail.company}
                 </p>
                 <p className="text-xs text-slate-500 mt-0.5">{detail.role}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{detail?.location}</p>
               </div>
             </div>
 
