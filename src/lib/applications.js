@@ -65,6 +65,31 @@ export const getApplications = async () => {
   throw new Error("Invalid applications response");
 };
 
+export const updateApplication = async (applicationId, applicationData) => {
+  if (!applicationId) {
+    throw new Error("Missing applicationId for update application request");
+  }
+
+  const response = await apiFetch(`${BACKEND_URL}/applications/update/${applicationId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(applicationData),
+  });
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(getResponseError(payload, "Failed to update application"));
+  }
+
+  if (payload?.success) {
+    return payload;
+  }
+
+  throw new Error("Invalid update application response");
+};
+
 export const getCurrentUserFollowups = async () => {
   const response = await apiFetch(
     `${BACKEND_URL}/applications/upcoming-followups`,
@@ -103,10 +128,34 @@ export const updateApplicationStatus = async (applicationId, newStatus) => {
   );
   const result = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(getResponseError(result, "Failed to update status"));
+    throw new Error(getResponseError(result, "Failed to delete application"));
   }
 
   if (result?.success && result?.data) {
+    return result;
+  }
+
+
+  throw new Error("Invalid delete application response");
+};
+
+
+export const deleteApplication = async (applicationId) => {
+  const response = await apiFetch(
+    `${BACKEND_URL}/applications/delete/${applicationId}`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+  );
+  const result = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(getResponseError(result, "Failed to update status"));
+  }
+
+  if (result?.success) {
     return result;
   }
 
