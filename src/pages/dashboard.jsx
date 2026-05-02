@@ -43,6 +43,7 @@ export default function DashboardPage() {
               <ApplicationsTable
                 applications={applications}
                 onStatusUpdated={refetchFollowups}
+                followUps = {followUps}
               />
             </div>
             <div className="xl:col-span-4">
