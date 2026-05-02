@@ -1,10 +1,45 @@
 import { useState } from "react";
 import Badge from "./badge";
-import { Eye, Edit } from "lucide-react";
+import { Eye, Edit, Trash } from "lucide-react";
 import EditApplicationModal from "../modals/edit-application-modal";
 import StatusTransitionMenu from "./statustransition";
-export default function ApplicationsTable({ applications, onStatusUpdated }) {
+import { deleteApplication } from "@/lib/applications";
+import { useApplications } from "@/context/applications-context";
+import toast from "react-hot-toast";
+import CancelledFollowupsModal from "../modals/cancelled-followups-modal";
+import DeleteApplicationModal from "../modals/delete-application-modal";
+export default function ApplicationsTable({ applications, onStatusUpdated, followUps }) {
   const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deletingId, setDeletingId] = useState("");
+  const [cancelledFollowupsAlert, setCancelledFollowupsAlert] = useState(null);
+  const { refetchApplications } = useApplications();
+  const canEditApplication = ["OFFERED", "REJECTED", "GHOSTED"];
+
+  const handleDeleteApplication = async () => {
+    if (!deleteTarget) return;
+
+    try {
+      setDeletingId(deleteTarget.id);
+      const result = await deleteApplication(deleteTarget.id);
+
+      if (result?.success) {
+        toast.success("Application deleted successfully");
+        setCancelledFollowupsAlert({
+          company: result?.company || deleteTarget.company,
+          role: result?.role || deleteTarget.role,
+        });
+        setDeleteTarget(null);
+        await refetchApplications();
+        await onStatusUpdated?.();
+      }
+    } catch (error) {
+      toast.error(error?.message || "Failed to delete application");
+    } finally {
+      setDeletingId("");
+    }
+  };
+
   return (
     <>
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -66,11 +101,10 @@ export default function ApplicationsTable({ applications, onStatusUpdated }) {
                     <Badge variant={app.currentStatus}>
                       {app.currentStatus}
                     </Badge>
-                      <StatusTransitionMenu
-                        application={app}
-                        onStatusUpdated={onStatusUpdated}
-                      />
-
+                    <StatusTransitionMenu
+                      application={app}
+                      onStatusUpdated={onStatusUpdated}
+                    />
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-400">
                     {new Date(app.appliedAt).toLocaleDateString("en-US", {
@@ -83,12 +117,21 @@ export default function ApplicationsTable({ applications, onStatusUpdated }) {
                       <button className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
                         <Eye className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600" />
                       </button>
-                      {app.currentStatus !== "OFFERED" && <button
-                        onClick={() => setEditTarget(app)}
-                        className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                      {!canEditApplication.includes(app.currentStatus) && (
+                        <button
+                          onClick={() => setEditTarget(app)}
+                          className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                          <Edit className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600" />
+                        </button>
+                      )}
+                      <button
+                        disabled={deletingId === app.id}
+                        onClick={() => setDeleteTarget(app)}
+                        className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        <Edit className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600" />
-                      </button>}
+                        <Trash className="w-3.5 h-3.5 text-slate-400 hover:text-rose-500" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -114,6 +157,23 @@ export default function ApplicationsTable({ applications, onStatusUpdated }) {
         isOpen={!!editTarget}
         application={editTarget}
         onClose={() => setEditTarget(null)}
+        onApplicationUpdated={onStatusUpdated}
+        followUps = {followUps}
+      />
+
+      <CancelledFollowupsModal
+        isOpen={Boolean(cancelledFollowupsAlert)}
+        onClose={() => setCancelledFollowupsAlert(null)}
+        company={cancelledFollowupsAlert?.company}
+        role={cancelledFollowupsAlert?.role}
+      />
+
+      <DeleteApplicationModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteApplication}
+        application={deleteTarget}
+        isDeleting={Boolean(deletingId)}
       />
     </>
   );
