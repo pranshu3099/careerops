@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Loader2, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { updateApplicationStatus } from '@/lib/applications';
@@ -72,20 +73,59 @@ function SingleAction({ next, onSelect, loading }) {
 // ── Dropdown (two next statuses) ────────────────────────────────────────────
 function DropdownMenu({ nexts, onSelect, loading }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [menuPosition, setMenuPosition] = useState(null);
+  const [mounted, setMounted] = useState(false);
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updateMenuPosition = () => {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    setMenuPosition({
+      top: rect.bottom + 6,
+      left: rect.left,
+      minWidth: Math.max(rect.width, 120),
+    });
+  };
 
   // Close on outside click
   useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const handler = (e) => {
+      const clickedButton = buttonRef.current?.contains(e.target);
+      const clickedMenu = menuRef.current?.contains(e.target);
+      if (!clickedButton && !clickedMenu) setOpen(false);
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+
+    updateMenuPosition();
+    window.addEventListener('scroll', updateMenuPosition, true);
+    window.addEventListener('resize', updateMenuPosition);
+
+    return () => {
+      window.removeEventListener('scroll', updateMenuPosition, true);
+      window.removeEventListener('resize', updateMenuPosition);
+    };
+  }, [open]);
+
   return (
-    <div ref={ref} className="relative">
+    <div className="inline-flex">
       <button
+        ref={buttonRef}
         disabled={loading}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          updateMenuPosition();
+          setOpen((v) => !v);
+        }}
         className={`
           inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium
           bg-slate-100 text-slate-600 hover:bg-slate-200 ring-1 ring-slate-200
@@ -104,13 +144,20 @@ function DropdownMenu({ nexts, onSelect, loading }) {
         )}
       </button>
 
-      {open && (
+      {mounted && open && menuPosition && createPortal(
         <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: menuPosition.top,
+            left: menuPosition.left,
+            minWidth: menuPosition.minWidth,
+          }}
           className="
-            absolute left-0 top-full mt-1.5 z-30
+            z-[11000]
             bg-white border border-slate-100 rounded-xl
-            shadow-lg shadow-slate-100/80
-            py-1 min-w-[120px]
+            shadow-xl shadow-slate-200/80
+            py-1
             animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150
           "
         >
@@ -133,7 +180,8 @@ function DropdownMenu({ nexts, onSelect, loading }) {
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
