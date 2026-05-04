@@ -8,8 +8,10 @@ import { useApplications } from "@/context/applications-context";
 import toast from "react-hot-toast";
 import CancelledFollowupsModal from "../modals/cancelled-followups-modal";
 import DeleteApplicationModal from "../modals/delete-application-modal";
+import ApplicationDetailsModal from "../modals/application-details-modal";
 export default function ApplicationsTable({ applications, onStatusUpdated, followUps }) {
   const [editTarget, setEditTarget] = useState(null);
+  const [viewTarget, setViewTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletingId, setDeletingId] = useState("");
   const [cancelledFollowupsAlert, setCancelledFollowupsAlert] = useState(null);
@@ -42,7 +44,7 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="px-6 pt-5 pb-4 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-slate-800">
@@ -57,7 +59,7 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-visible">
           <table className="w-full">
             <thead>
               <tr className="bg-slate-50 border-y border-slate-100 text-left">
@@ -84,7 +86,7 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
                   key={app.id}
                   className="hover:bg-slate-50/70 transition-colors group"
                 >
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 overflow-visible">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-600 font-bold text-xs flex-shrink-0">
                         {app.company[0]}
@@ -114,7 +116,10 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
+                      <button
+                        onClick={() => setViewTarget(app)}
+                        className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
                         <Eye className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600" />
                       </button>
                       {!canEditApplication.includes(app.currentStatus) && (
@@ -159,6 +164,25 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
         onClose={() => setEditTarget(null)}
         onApplicationUpdated={onStatusUpdated}
         followUps = {followUps}
+      />
+
+      <ApplicationDetailsModal
+        isOpen={Boolean(viewTarget)}
+        application={
+          viewTarget
+            ? {
+                id: viewTarget.id,
+                company: viewTarget.company,
+                role: viewTarget.role,
+                location: viewTarget.location,
+                status: viewTarget.currentStatus,
+                appliedAt: viewTarget.appliedAt,
+              }
+            : null
+        }
+        mode="view"
+        onClose={() => setViewTarget(null)}
+        onStatusUpdated={onStatusUpdated}
       />
 
       <CancelledFollowupsModal
