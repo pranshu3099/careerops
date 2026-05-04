@@ -65,18 +65,43 @@ export const getApplications = async () => {
   throw new Error("Invalid applications response");
 };
 
+export const getApplicationStats = async () => {
+  const response = await apiFetch(`${BACKEND_URL}/applications/stats`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      getResponseError(result, "Failed to get application stats"),
+    );
+  }
+
+  if (result && typeof result === "object" && !Array.isArray(result)) {
+    return result;
+  }
+
+  throw new Error("Invalid application stats response");
+};
+
 export const updateApplication = async (applicationId, applicationData) => {
   if (!applicationId) {
     throw new Error("Missing applicationId for update application request");
   }
 
-  const response = await apiFetch(`${BACKEND_URL}/applications/update/${applicationId}`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await apiFetch(
+    `${BACKEND_URL}/applications/update/${applicationId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(applicationData),
     },
-    body: JSON.stringify(applicationData),
-  });
+  );
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
@@ -90,7 +115,7 @@ export const updateApplication = async (applicationId, applicationData) => {
   throw new Error("Invalid update application response");
 };
 
-export const getCurrentUserFollowups = async () => {
+export const getUpcomingFollowups = async () => {
   const response = await apiFetch(
     `${BACKEND_URL}/applications/upcoming-followups`,
     {
@@ -113,6 +138,47 @@ export const getCurrentUserFollowups = async () => {
   throw new Error("Invalid followups response");
 };
 
+export const getFollowupsByUser = async () => {
+  const response = await apiFetch(`${BACKEND_URL}/followups`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(getResponseError(result, "Failed to get followups"));
+  }
+
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  throw new Error("Invalid followups response");
+};
+
+export const getDueSoonFollowups = async () => {
+  const response = await apiFetch(`${BACKEND_URL}/followups/due-soon`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      getResponseError(result, "Failed to get due-soon followups"),
+    );
+  }
+
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  throw new Error("Invalid due-soon followups response");
+};
+
 export const updateApplicationStatus = async (applicationId, newStatus) => {
   const response = await apiFetch(
     `${BACKEND_URL}/applications/${applicationId}/status`,
@@ -128,17 +194,15 @@ export const updateApplicationStatus = async (applicationId, newStatus) => {
   );
   const result = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(getResponseError(result, "Failed to delete application"));
+    throw new Error(getResponseError(result, "Failed to update status"));
   }
 
   if (result?.success && result?.data) {
     return result;
   }
 
-
-  throw new Error("Invalid delete application response");
+  throw new Error("Invalid status update response");
 };
-
 
 export const deleteApplication = async (applicationId) => {
   const response = await apiFetch(
@@ -152,13 +216,12 @@ export const deleteApplication = async (applicationId) => {
   );
   const result = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(getResponseError(result, "Failed to update status"));
+    throw new Error(getResponseError(result, "Failed to delete application"));
   }
 
   if (result?.success) {
     return result;
   }
 
-
-  throw new Error("Invalid status update response");
+  throw new Error("Invalid delete application response");
 };
