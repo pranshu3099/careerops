@@ -25,7 +25,7 @@ export default function VerifyEmailComponent() {
           </h2>
           
           <p className="text-gray-600 mb-6 leading-relaxed">
-            We've sent a verification link to your email address. Please check your inbox and click the link to verify your account.
+            We&apos;ve sent a verification link to your email address. Please check your inbox and click the link to verify your account.
           </p>
 
           {/* Additional Info */}
@@ -34,14 +34,14 @@ export default function VerifyEmailComponent() {
               <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
               <p className="text-sm text-blue-800 text-left">
                 The verification link will expire in <strong>15 minutes</strong>. 
-                If you don't see the email, check your spam folder.
+                If you don&apos;t see the email, check your spam folder.
               </p>
             </div>
           </div>
 
           {/* Resend Link */}
           <p className="text-sm text-gray-500">
-            Didn't receive the email?{" "}
+            Didn&apos;t receive the email?{" "}
             <button className="text-gray-900 font-medium hover:underline focus:outline-none">
               Resend verification email
             </button>
