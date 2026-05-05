@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import CancelledFollowupsModal from "../modals/cancelled-followups-modal";
 import DeleteApplicationModal from "../modals/delete-application-modal";
 import ApplicationDetailsModal from "../modals/application-details-modal";
+import InterviewActions from "./interview-actions";
 export default function ApplicationsTable({ applications, onStatusUpdated, followUps }) {
   const [editTarget, setEditTarget] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
@@ -17,6 +18,11 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
   const [cancelledFollowupsAlert, setCancelledFollowupsAlert] = useState(null);
   const { refetchApplications } = useApplications();
   const canEditApplication = ["OFFERED", "REJECTED", "GHOSTED"];
+
+  const handleStatusUpdated = async (app, statusChange) => {
+    await onStatusUpdated?.(statusChange);
+
+  };
 
   const handleDeleteApplication = async () => {
     if (!deleteTarget) return;
@@ -103,9 +109,17 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
                     <Badge variant={app.currentStatus}>
                       {app.currentStatus}
                     </Badge>
-                    <StatusTransitionMenu
+                    {app.currentStatus !== "INTERVIEWING" && (
+                      <StatusTransitionMenu
+                        application={app}
+                        onStatusUpdated={(statusChange) =>
+                          handleStatusUpdated(app, statusChange)
+                        }
+                      />
+                    )}
+                    <InterviewActions
                       application={app}
-                      onStatusUpdated={onStatusUpdated}
+                      onChanged={onStatusUpdated}
                     />
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-400">
@@ -181,7 +195,9 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
             : null
         }
         mode="view"
-        onClose={() => setViewTarget(null)}
+        onClose={() => {
+          setViewTarget(null);
+        }}
         onStatusUpdated={onStatusUpdated}
       />
 
