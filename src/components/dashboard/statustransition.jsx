@@ -199,9 +199,13 @@ export default function StatusTransitionMenu({ application, onStatusUpdated }) {
 
     try {
       setLoading(true);
-      await updateApplicationStatus(application.id, newStatus);
+      const result = await updateApplicationStatus(application.id, newStatus);
       await refetchApplications();
-      await onStatusUpdated?.();
+      await onStatusUpdated?.({
+        previousStatus: application.currentStatus,
+        newStatus,
+        result,
+      });
       toast.success(`Moved to ${STATUS_STYLES[newStatus]?.label ?? newStatus}`);
     } catch (err) {
       toast.error(err?.message || 'Failed to update status');
