@@ -1,4 +1,5 @@
 import Badge from "@/components/dashboard/badge";
+import InterviewActions from "@/components/dashboard/interview-actions";
 import StatusTransitionMenu from "@/components/dashboard/statustransition";
 import ApplicationDetailsModal from "@/components/modals/application-details-modal";
 import CancelledFollowupsModal from "@/components/modals/cancelled-followups-modal";
@@ -103,6 +104,14 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
       refetchApplicationStats(),
     ]);
   }, [refetchApplicationStats, refetchApplications, refetchFollowups]);
+
+  const handleStatusUpdated = useCallback(
+    async (application, statusChange) => {
+      await handleRefreshAfterMutation();
+
+    },
+    [handleRefreshAfterMutation],
+  );
 
   useEffect(() => {
     if (!applications?.length) return;
@@ -388,12 +397,23 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
                             <Badge variant={status}>{status}</Badge>
-                            <StatusTransitionMenu
+                            {status !== "INTERVIEWING" && (
+                              <StatusTransitionMenu
+                                application={{
+                                  ...application,
+                                  currentStatus: status,
+                                }}
+                                onStatusUpdated={(statusChange) =>
+                                  handleStatusUpdated(application, statusChange)
+                                }
+                              />
+                            )}
+                            <InterviewActions
                               application={{
                                 ...application,
                                 currentStatus: status,
                               }}
-                              onStatusUpdated={handleRefreshAfterMutation}
+                              onChanged={handleRefreshAfterMutation}
                             />
                           </div>
                         </td>
@@ -470,7 +490,9 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
             : null
         }
         mode="view"
-        onClose={() => setViewTarget(null)}
+        onClose={() => {
+          setViewTarget(null);
+        }}
         onStatusUpdated={handleRefreshAfterMutation}
       />
 
