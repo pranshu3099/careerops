@@ -141,7 +141,7 @@ function FollowupCard({ followup, onViewApplication, onStatusUpdated }) {
           {nextStatuses.length > 0 && (
             <StatusTransitionMenu
               application={application}
-              onStatusUpdated={onStatusUpdated}
+              onStatusUpdated={(statusChange) => onStatusUpdated(followup, statusChange)}
             />
           )}
           <button
@@ -190,6 +190,13 @@ export default function FollowupsWorkspace({ refreshKey = 0 }) {
       refetchUpcomingFollowups(),
     ]);
   }, [refetchApplications, refetchFollowups, refetchUpcomingFollowups]);
+
+  const handleStatusUpdated = useCallback(
+    async (followup, statusChange) => {
+      await handleRefreshAfterMutation();
+    },
+    [handleRefreshAfterMutation],
+  );
 
   useEffect(() => {
     if (!refreshKey) return;
@@ -428,7 +435,7 @@ export default function FollowupsWorkspace({ refreshKey = 0 }) {
                   key={followup.followUpId}
                   followup={followup}
                   onViewApplication={setViewTarget}
-                  onStatusUpdated={handleRefreshAfterMutation}
+                  onStatusUpdated={handleStatusUpdated}
                 />
               ))}
             </FollowupSection>
@@ -439,7 +446,7 @@ export default function FollowupsWorkspace({ refreshKey = 0 }) {
                   key={followup.followUpId}
                   followup={followup}
                   onViewApplication={setViewTarget}
-                  onStatusUpdated={handleRefreshAfterMutation}
+                  onStatusUpdated={handleStatusUpdated}
                 />
               ))}
             </FollowupSection>
@@ -453,7 +460,7 @@ export default function FollowupsWorkspace({ refreshKey = 0 }) {
                   key={followup.followUpId}
                   followup={followup}
                   onViewApplication={setViewTarget}
-                  onStatusUpdated={handleRefreshAfterMutation}
+                  onStatusUpdated={handleStatusUpdated}
                 />
               ))}
             </FollowupSection>
@@ -478,7 +485,9 @@ export default function FollowupsWorkspace({ refreshKey = 0 }) {
             : null
         }
         mode="view"
-        onClose={() => setViewTarget(null)}
+        onClose={() => {
+          setViewTarget(null);
+        }}
         onStatusUpdated={handleRefreshAfterMutation}
       />
     </>
