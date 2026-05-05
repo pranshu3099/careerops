@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Home, FileText, Bell, BarChart3, Settings, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, FileText, Bell, BarChart3, Settings, X, ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react';
  
 const navItems = [
   { label: 'Dashboard', icon: Home, href: '/dashboard' },
   { label: 'Applications', icon: FileText, href: '/dashboard/application' },
+  { label: 'Interviews', icon: CalendarClock, href: '/dashboard/application/interview' },
   { label: 'Follow-ups', icon: Bell, href: '/dashboard/followups' },
   { label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
   { label: 'Settings', icon: Settings, href: '/dashboard/settings' },
@@ -26,6 +27,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose = () => {} }
   };
   const isActiveRoute = (href) => {
     if (href === '/dashboard') return router.pathname === href;
+    if (href === '/dashboard/application') return router.pathname === href;
     return router.pathname === href || router.pathname.startsWith(`${href}/`);
   };
 
