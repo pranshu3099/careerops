@@ -27,6 +27,7 @@ export default function ApplicationDetailsModal({
 }) {
   const [isMounted, setIsMounted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [currentStatusOverride, setCurrentStatusOverride] = useState("");
 
   const handleClose = useCallback(() => {
     setIsVisible(false);
@@ -42,6 +43,7 @@ export default function ApplicationDetailsModal({
   useEffect(() => {
     if (!isOpen) return;
 
+    setCurrentStatusOverride("");
     setIsVisible(false);
     const raf = requestAnimationFrame(() => {
       requestAnimationFrame(() => setIsVisible(true));
@@ -57,12 +59,20 @@ export default function ApplicationDetailsModal({
     company: application.company || "Unknown company",
     role: application.role || "Unknown role",
     location: application.location,
-    currentStatus: application.status || application.currentStatus,
+    currentStatus: currentStatusOverride || application.status || application.currentStatus,
     appliedAt: application.appliedAt,
   };
   const isUpdateMode = mode === "update";
   const nextStatuses = getNextStatuses(normalizedApplication.currentStatus);
   const hasFollowupDetails = application.scheduledAt || application.followupMessage;
+  const handleStatusUpdated = async (statusChange) => {
+    if (statusChange?.newStatus) {
+      setCurrentStatusOverride(statusChange.newStatus);
+    }
+
+    await onStatusUpdated?.(statusChange);
+
+  };
 
   return createPortal(
     <div
@@ -72,7 +82,7 @@ export default function ApplicationDetailsModal({
       onMouseDown={handleClose}
     >
       <div
-        className={`w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20 transition-all duration-280 ease-out ${
+        className={`max-h-[92vh] w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20 transition-all duration-280 ease-out ${
           isVisible ? "translate-y-0 scale-100" : "translate-y-4 scale-95"
         }`}
         onMouseDown={(event) => event.stopPropagation()}
@@ -94,7 +104,7 @@ export default function ApplicationDetailsModal({
           </button>
         </div>
 
-        <div className="space-y-4 px-5 py-5">
+        <div className="max-h-[calc(92vh-137px)] space-y-4 overflow-y-auto px-5 py-5">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
@@ -168,7 +178,7 @@ export default function ApplicationDetailsModal({
                 {nextStatuses.length > 0 ? (
                   <StatusTransitionMenu
                     application={normalizedApplication}
-                    onStatusUpdated={onStatusUpdated}
+                    onStatusUpdated={handleStatusUpdated}
                   />
                 ) : (
                   <p className="text-sm text-slate-500">
