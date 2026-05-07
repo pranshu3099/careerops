@@ -116,6 +116,7 @@ export const syncCurrentUser = async () => {
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`,
       {
         method: "GET",
+        credentials: "include",
       },
     );
 
