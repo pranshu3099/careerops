@@ -2,9 +2,18 @@ import Badge from "@/components/dashboard/badge";
 import InterviewFormModal from "@/components/modals/interview-form-modal";
 import InterviewResultModal from "@/components/modals/interview-result-modal";
 import { useApplications } from "@/context/applications-context";
+import useApplicationStats from "@/hooks/use-application-stats";
 import useAllApplicationInterviews from "@/hooks/use-all-application-interviews";
+import useDueSoonFollowups from "@/hooks/use-due-soon-followups";
 import useUpcomingFollowups from "@/hooks/use-upcoming-follow-up";
 import { updateApplicationStatus } from "@/lib/applications";
+import { isTerminalApplicationStatus } from "@/lib/application-statuses";
+import {
+  getAddRoundLabel,
+  getLatestInterview,
+  getNextRound,
+} from "@/lib/interview-rounds";
+import { cancelInterview } from "@/lib/interviews";
 import {
   CalendarClock,
   ChevronDown,
@@ -12,6 +21,7 @@ import {
   Plus,
   RefreshCcw,
   Search,
+  XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -65,12 +75,11 @@ const Pill = ({ children, className }) => (
   </span>
 );
 
-const getLatestInterview = (interviews) =>
-  interviews[interviews.length - 1] || null;
-
 export default function InterviewsWorkspace({ refreshKey = 0 }) {
   const { applications, refetchApplications } = useApplications();
   const { refetchFollowups } = useUpcomingFollowups();
+  const { refetchDueSoonFollowups } = useDueSoonFollowups();
+  const { refetchApplicationStats } = useApplicationStats();
   const { applicationInterviews, isLoading, error, refetchAllInterviews } =
     useAllApplicationInterviews(applications);
   const [search, setSearch] = useState("");
@@ -91,8 +100,16 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
       refetchAllInterviews(),
       refetchApplications(),
       refetchFollowups(),
+      refetchDueSoonFollowups(),
+      refetchApplicationStats(),
     ]);
-  }, [refetchAllInterviews, refetchApplications, refetchFollowups]);
+  }, [
+    refetchAllInterviews,
+    refetchApplicationStats,
+    refetchApplications,
+    refetchDueSoonFollowups,
+    refetchFollowups,
+  ]);
 
   useEffect(() => {
     if (!refreshKey || handledRefreshKeyRef.current === refreshKey) return;
@@ -171,24 +188,30 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
     }
   };
 
+  const handleCancelInterview = async (interview) => {
+    try {
+      await cancelInterview(interview?.id || interview?.interviewId);
+      await refreshAll();
+      toast.success("Interview cancelled");
+    } catch (err) {
+      toast.error(err?.message || "Failed to cancel interview");
+    }
+  };
+
   const renderApplicationActions = (application, interviews) => {
     const status = String(application?.currentStatus).toUpperCase();
     const latest = getLatestInterview(interviews);
-    const nextRound =
-      interviews.reduce(
-        (maxRound, interview) =>
-          Math.max(maxRound, Number(interview?.round) || 0),
-        0,
-      ) + 1;
+    const nextRound = getNextRound(interviews);
+    const addRoundLabel = getAddRoundLabel(interviews);
     const canAdd =
       status === "INTERVIEWING" &&
       (!latest ||
-        ((latest.status === "COMPLETED" || latest.status === "CANCELLED") &&
-          (latest.result === "PASSED" || latest.result === null)));
+        latest.status === "CANCELLED" ||
+        (latest.status === "COMPLETED" && latest.result === "PASSED"));
     const canProceed =
       status === "INTERVIEWING" &&
-      (latest?.status === "COMPLETED" || latest?.status === "CANCELLED") &&
-      (latest?.result === "PASSED" || latest?.result === null);
+      latest?.status === "COMPLETED" &&
+      latest?.result === "PASSED";
 
     if (!canAdd && !canProceed) return null;
 
@@ -197,10 +220,10 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
         {canAdd && (
           <button
             onClick={() => openCreate(application, nextRound)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600 ring-1 ring-indigo-100 hover:bg-indigo-100"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-indigo-50 px-3 text-xs font-semibold leading-none text-indigo-600 ring-1 ring-indigo-100 transition-colors hover:bg-indigo-100"
           >
-            <Plus className="h-3.5 w-3.5" />
-            Add next round
+            <Plus className="h-3.5 w-3.5 shrink-0" />
+            {addRoundLabel}
           </button>
         )}
 
@@ -212,10 +235,10 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
                   current === application.id ? "" : application.id,
                 )
               }
-              className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-600 ring-1 ring-emerald-100 hover:bg-emerald-100"
+              className="inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-50 px-3 text-xs font-semibold leading-none text-emerald-600 ring-1 ring-emerald-100 transition-colors hover:bg-emerald-100"
             >
               Proceed further
-              <ChevronDown className="h-3.5 w-3.5" />
+              <ChevronDown className="h-3.5 w-3.5 shrink-0" />
             </button>
             {proceedOpenId === application.id && (
               <div className="absolute right-0 top-8 z-40 min-w-36 overflow-hidden rounded-xl border border-slate-100 bg-white py-1 shadow-xl shadow-slate-200/80">
@@ -226,7 +249,7 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
                   }}
                   className="block w-full px-3 py-2 text-left text-xs font-medium text-slate-600 hover:bg-slate-50"
                 >
-                  Add next round
+                  {addRoundLabel}
                 </button>
                 <button
                   onClick={() => moveApplication(application, "OFFERED")}
@@ -367,6 +390,10 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
               <div className="mt-4 space-y-3">
                 {interviews.map((interview) => {
                   const interviewId = interview.id || interview.interviewId;
+                  const applicationStatus =
+                    application?.currentStatus || application?.status;
+                  const isTerminalStatus =
+                    isTerminalApplicationStatus(applicationStatus);
                   const isCompleted = interview.status === "COMPLETED";
                   const hasFinalResult = [
                     "PASSED",
@@ -374,11 +401,18 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
                     "PENDING",
                   ].includes(interview.result);
                   const canUpdateResult =
+                    !isTerminalStatus &&
                     interview.status !== "CANCELLED" &&
                     (!isCompleted || interview.result === "PENDING");
                   const canEdit =
+                    !isTerminalStatus &&
                     interview.status !== "CANCELLED" &&
+                    interview.result !== "PENDING" &&
                     !(isCompleted && hasFinalResult);
+                  const canCancel =
+                    !isTerminalStatus &&
+                    interview.status === "SCHEDULED" &&
+                    interview.result !== "PENDING";
 
                   return (
                     <article
@@ -441,6 +475,15 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
                               Edit
                             </button>
                           )}
+                          {canCancel && (
+                            <button
+                              onClick={() => handleCancelInterview(interview)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-rose-100 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-500 hover:bg-rose-100"
+                            >
+                              <XCircle className="h-3 w-3" />
+                              Cancel
+                            </button>
+                          )}
                           {canUpdateResult && (
                             <button
                               onClick={() =>
@@ -467,6 +510,16 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
         mode={formState.mode}
         applicationId={formState.application?.id}
         defaultRound={formState.round}
+        roundLabel={
+          formState.mode === "create" && formState.application
+            ? getAddRoundLabel(
+                applicationInterviews.find(
+                  ({ application }) =>
+                    application?.id === formState.application?.id,
+                )?.interviews || [],
+              )
+            : undefined
+        }
         interview={formState.interview}
         onClose={() =>
           setFormState({
