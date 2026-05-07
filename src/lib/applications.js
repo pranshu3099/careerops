@@ -197,6 +197,10 @@ export const updateApplicationStatus = async (applicationId, newStatus) => {
     throw new Error(getResponseError(result, "Failed to update status"));
   }
 
+  if (result?.success === false) {
+    throw new Error(getResponseError(result, "Failed to update status"));
+  }
+
   if (result?.success && result?.data) {
     return result;
   }
