@@ -107,6 +107,8 @@ The summary cards use live data for:
 - Total applications.
 - Scheduled interviews.
 - Offers received.
+- Accepted applications.
+- Declined offers.
 - Rejections.
 
 The recent applications table shows a compact list of applications with status controls, interview actions, view/edit/delete actions, and frontend pagination.
@@ -133,6 +135,8 @@ Supported statuses:
 - Shortlisted.
 - Interviewing.
 - Offered.
+- Accepted.
+- Offer Declined.
 - Rejected.
 - Ghosted.
 
@@ -161,10 +165,15 @@ Current frontend transition rules:
 - Applied can move to Shortlisted or Rejected.
 - Shortlisted can move to Interviewing.
 - Interviewing can move to Offered or Rejected.
+- Offered can move to Accepted or Offer Declined.
 
-The status transition UI is compact and appears near status badges. The frontend refetches applications and follow-ups after status updates so dashboard data remains current.
+Accepted, Offer Declined, Rejected, and Ghosted are treated as closed statuses in the UI. Closed applications keep their historical details visible, but active status movement, follow-up actions, interview creation, interview editing, interview cancellation, and interview result updates are hidden.
+
+The status transition UI is compact and appears near status badges. The frontend refetches applications, upcoming follow-ups, due-soon follow-ups, and application stats after status updates so dashboard data remains current.
 
 For interviewing applications, the generic status transition control is replaced by interview-specific actions. This keeps the interview flow clear and avoids mixing application-level movement with interview round actions.
+
+When an Offered application is marked Accepted or Offer Declined, the backend cancels pending follow-ups. The frontend shows a small success toast and refetches dependent data. If the backend rejects a transition, such as with `Invalid status transition`, the frontend displays that message and leaves the UI unchanged.
 
 ## Follow-Up Management
 
@@ -249,7 +258,7 @@ Interview capabilities:
 
 Interview fields:
 
-- Round number.
+- Round number, computed by the backend and shown as read-only history.
 - Round name.
 - Interview type.
 - Interviewer.
@@ -284,12 +293,26 @@ Supported interview results:
 Interview behavior:
 
 - Users can create interviews only for applications already in Interviewing status.
-- Creating an interview does not change the application status.
-- If no interview exists for an interviewing application, the UI shows an Add next round action.
+- Creating an interview always creates a Scheduled interview on the backend.
+- The frontend does not send round, status, or result when creating an interview.
+- The frontend does not send round, status, or result when editing interview details.
+- If no interview exists for an interviewing application, the UI shows Add Round 1.
+- If the latest effective round was Cancelled, the UI shows Add Round for the same round number.
+- If the latest effective round was Completed and Passed, the UI shows Add Round for the next round number and Proceed further actions.
 - After a round exists, the UI shows an Update Result action when the result can still be updated.
 - Passed results keep the application in Interviewing and show Proceed further actions.
 - Failed results rely on backend behavior to move the application to Rejected, then the frontend refetches application and interview data.
 - Pending results keep the application in Interviewing and keep result update available where appropriate.
+- Cancel is shown only for Scheduled interviews and uses the dedicated cancel endpoint.
+- Accepted and Offer Declined applications show interview history only. Add round, edit, cancel, and result update actions are hidden.
+
+Interview API behavior:
+
+- `POST /interviews` creates a scheduled interview using application ID, round name, type, interviewer, and scheduled date/time.
+- `PATCH /interviews/:id` updates editable interview details such as round name, type, interviewer, scheduled date/time, and feedback.
+- `PATCH /interviews/:id/cancel` cancels a scheduled interview.
+- `PATCH /interviews/:id/result` updates the interview result and optional feedback.
+- Allowed result values are Passed, Failed, and Pending.
 
 ## Modals and User Actions
 
@@ -458,4 +481,3 @@ Possible frontend improvements:
 - Export applications to CSV.
 - Global search across applications, follow-ups, and interviews.
 - Notification center for due-soon alerts and interview reminders.
-
