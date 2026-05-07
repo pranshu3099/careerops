@@ -1,22 +1,37 @@
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { handleLogout } from "@/lib/auth";
-import { Bell, Menu } from "lucide-react";
+import { Bell, Loader2, Menu } from "lucide-react";
 import { useState } from "react";
 import useCurrentUser from "@/hooks/use-current-user";
 import AddApplicationModal from "../modals/add-application-modal";
+import Link from "next/link";
 
 export default function Navbar({ onMobileMenuClick, onApplicationCreated }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { userName, userEmail } = useCurrentUser();
   const router = useRouter();
  
   async function logoutUser() {
-    const res = await handleLogout();
-    if (res.ok) {
-      router.push("/");
-      toast.success("logged out successfully");
+    if (isLoggingOut) return;
+
+    try {
+      setIsLoggingOut(true);
+      const res = await handleLogout();
+
+      if (res.ok) {
+        router.push("/");
+        toast.success("Logged out successfully");
+        return;
+      }
+
+      toast.error("Failed to logout");
+    } catch (error) {
+      toast.error(error?.message || "Failed to logout");
+    } finally {
+      setIsLoggingOut(false);
     }
   }
 
@@ -55,7 +70,7 @@ export default function Navbar({ onMobileMenuClick, onApplicationCreated }) {
               className="flex items-center gap-2.5 hover:bg-slate-50 rounded-xl pr-2 pl-1 py-1 transition-colors border border-transparent hover:border-slate-200"
             >
               <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                P
+                {userName[0]}
               </div>
               <div className="hidden sm:block text-left">
                 <p className="text-sm font-semibold text-slate-700 leading-tight">{userName}</p>
@@ -72,18 +87,24 @@ export default function Navbar({ onMobileMenuClick, onApplicationCreated }) {
                   <p className="font-semibold text-slate-800">{userName}</p>
                   <p className="text-slate-400 text-xs mt-0.5">{userEmail}</p>
                 </div>
-                <a href="#" className="flex px-4 py-2.5 hover:bg-slate-50 items-center gap-2.5 text-slate-600 transition-colors">
+                <Link href="/dashboard/profile" className="flex px-4 py-2.5 hover:bg-slate-50 items-center gap-2.5 text-slate-600 transition-colors">
                   <span>👤</span> Profile
-                </a>
-                <a href="#" className="flex px-4 py-2.5 hover:bg-slate-50 items-center gap-2.5 text-slate-600 transition-colors">
+                </Link>
+                <Link href="/dashboard/settings" className="flex px-4 py-2.5 hover:bg-slate-50 items-center gap-2.5 text-slate-600 transition-colors">
                   <span>⚙️</span> Settings
-                </a>
+                </Link>
                 <div className="border-t border-slate-50 my-1" />
                 <button
                   onClick={logoutUser}
-                  className="flex w-full px-4 py-2.5 text-rose-500 hover:bg-rose-50 items-center gap-2.5 font-medium transition-colors"
+                  disabled={isLoggingOut}
+                  className="flex w-full px-4 py-2.5 text-rose-500 hover:bg-rose-50 items-center gap-2.5 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <span>←</span> Logout
+                  {isLoggingOut ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <span>←</span>
+                  )}
+                  {isLoggingOut ? "Logging out..." : "Logout"}
                 </button>
               </div>
             )}
