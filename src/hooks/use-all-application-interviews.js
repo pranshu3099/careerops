@@ -1,4 +1,4 @@
-import { getInterviewsByApplication } from "@/lib/interviews";
+import { getAllInterviews } from "@/lib/interviews";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const getTime = (value) => {
@@ -13,6 +13,16 @@ const sortInterviews = (interviews) =>
     return getTime(a?.scheduledAt) - getTime(b?.scheduledAt);
   });
 
+const buildApplicationFromInterview = (interview) => ({
+  id: interview?.applicationId,
+  company: interview?.company,
+  role: interview?.role,
+  location: interview?.location,
+  currentStatus: interview?.applicationStatus,
+  status: interview?.applicationStatus,
+  appliedAt: interview?.appliedAt,
+});
+
 export default function useAllApplicationInterviews(applications = []) {
   const [applicationInterviews, setApplicationInterviews] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,24 +30,36 @@ export default function useAllApplicationInterviews(applications = []) {
   const isMountedRef = useRef(false);
 
   const refetchAllInterviews = useCallback(async () => {
-    const activeApplications = applications.filter((application) => application?.id);
-    if (!activeApplications.length) {
-      setApplicationInterviews([]);
-      return [];
-    }
+    const validApplications = applications.filter((application) => application?.id);
 
     try {
       setIsLoading(true);
       setError("");
-      const result = await Promise.all(
-        activeApplications.map(async (application) => {
-          const interviews = await getInterviewsByApplication(application.id).catch(() => []);
-          return {
-            application,
-            interviews: sortInterviews(Array.isArray(interviews) ? interviews : []),
-          };
-        }),
-      );
+      const allInterviews = await getAllInterviews();
+      const interviewsByApplication = new Map();
+
+      (Array.isArray(allInterviews) ? allInterviews : []).forEach((interview) => {
+        const applicationId = interview?.applicationId;
+        if (!applicationId) return;
+
+        const currentGroup = interviewsByApplication.get(applicationId) || [];
+        interviewsByApplication.set(applicationId, [...currentGroup, interview]);
+      });
+
+      const applicationIds = new Set(validApplications.map((application) => application.id));
+      const result = validApplications.map((application) => ({
+        application,
+        interviews: sortInterviews(interviewsByApplication.get(application.id) || []),
+      }));
+
+      interviewsByApplication.forEach((interviews, applicationId) => {
+        if (applicationIds.has(applicationId)) return;
+
+        result.push({
+          application: buildApplicationFromInterview(interviews[0]),
+          interviews: sortInterviews(interviews),
+        });
+      });
 
       if (!isMountedRef.current) return result;
 
