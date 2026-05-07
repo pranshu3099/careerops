@@ -8,7 +8,7 @@ export default function FollowUps({ followUps }) {
 
   return (
     <>
-      <Card className="h-full flex flex-col overflow-hidden">
+      <Card className="flex flex-col overflow-hidden">
         <div className="px-5 pt-5 pb-4 flex items-center justify-between border-b border-slate-50">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-amber-50">
