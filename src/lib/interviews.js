@@ -30,8 +30,24 @@ export const getInterviewsByApplication = async (applicationId) => {
   }
 
   if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.interviews)) return payload.interviews;
+
+  throw new Error("Invalid interviews response");
+};
+
+export const getAllInterviews = async () => {
+  const response = await apiFetch(`${BACKEND_URL}/interviews/`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(getResponseError(payload, "Failed to get interviews"));
+  }
+
+  if (Array.isArray(payload)) return payload;
 
   throw new Error("Invalid interviews response");
 };
@@ -90,6 +106,26 @@ export const updateInterviewResult = async (interviewId, resultData) => {
 
   if (!response.ok) {
     throw new Error(getResponseError(payload, "Failed to update interview result"));
+  }
+
+  return unwrapInterviewPayload(payload);
+};
+
+export const cancelInterview = async (interviewId) => {
+  if (!interviewId) {
+    throw new Error("Missing interviewId for cancel interview request");
+  }
+
+  const response = await apiFetch(`${BACKEND_URL}/interviews/${interviewId}/cancel`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(getResponseError(payload, "Failed to cancel interview"));
   }
 
   return unwrapInterviewPayload(payload);
