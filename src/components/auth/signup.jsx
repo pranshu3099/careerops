@@ -8,56 +8,58 @@ const SignupPage = ({ handleuserSignup, isSignupLoading, setIsSignupLoading }) =
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswordRules, setShowPasswordRules] = useState(false);
-  const [showEmailError, setShowEmailError] = useState(false);
-  const [showNameError, setShowNameError] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  // Add this state at the top with other states
-  const [toastMessage, setToastMessage] = useState("");
+  const validateSignup = () => {
+    const nextErrors = {};
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
 
-  // Add the handleSubmit function
-  const handleSubmit = () => {
-    // Check each field in order and show toast for first empty/invalid field
-    if (!name || !nameRegex.test(name)) {
-      setToastMessage("Please enter a valid name");
-      setShowNameError(true);
-      setTimeout(() => setToastMessage(""), 3000);
-      return;
+    if (!trimmedName) {
+      nextErrors.name = "Name is required";
+    } else if (!nameRegex.test(trimmedName)) {
+      nextErrors.name =
+        "Name must be at least 2 characters and contain only letters";
     }
 
-    if (!email || !emailRegex.test(email)) {
-      setToastMessage("Please enter a valid email address");
-      setShowEmailError(true);
-      setTimeout(() => setToastMessage(""), 3000);
-      return;
+    if (!trimmedEmail) {
+      nextErrors.email = "Email is required";
+    } else if (!emailRegex.test(trimmedEmail)) {
+      nextErrors.email = "Please enter a valid email address";
     }
 
-    if (!password || !passwordRules.every((rule) => rule.test(password))) {
-      setToastMessage("Please enter a valid password");
-      setTimeout(() => setToastMessage(""), 3000);
-      return;
+    if (!password) {
+      nextErrors.password = "Password is required";
+    } else if (!passwordRules.every((rule) => rule.test(password))) {
+      nextErrors.password = "Password does not meet the requirements";
     }
 
-    if (password !== confirmPassword) {
-      setToastMessage("Passwords do not match");
-      setTimeout(() => setToastMessage(""), 3000);
-      return;
+    if (!confirmPassword) {
+      nextErrors.confirmPassword = "Confirm password is required";
+    } else if (password !== confirmPassword) {
+      nextErrors.confirmPassword = "Passwords do not match";
     }
 
-    // All validations passed - proceed with signup
-    else {
-      setIsSignupLoading(true);
-      handleuserSignup(name, email, password);
-    }
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const clearFieldError = (field) => {
+    if (!errors[field]) return;
+    setErrors((current) => ({ ...current, [field]: "" }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (isSignupLoading) return;
+    if (!validateSignup()) return;
+
+    setIsSignupLoading(true);
+    handleuserSignup(name.trim(), email.trim(), password);
   };
 
   return (
-    <>
-      {toastMessage && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-3 rounded-md shadow-lg z-50 flex items-center animate-slide-down">
-          <X className="w-4 h-4 mr-2" />
-          {toastMessage}
-        </div>
-      )}
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <div>
         <label
           htmlFor="name"
@@ -69,16 +71,22 @@ const SignupPage = ({ handleuserSignup, isSignupLoading, setIsSignupLoading }) =
           type="text"
           id="name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={() => setShowNameError(true)}
+          onChange={(e) => {
+            setName(e.target.value);
+            clearFieldError("name");
+          }}
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+          className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+            errors.name
+              ? "border-red-300 focus:ring-red-100"
+              : "border-gray-300 focus:ring-gray-900"
+          }`}
           placeholder="John Doe"
         />
-        {showNameError && !nameRegex.test(name) && name.length > 0 && (
+        {errors.name && (
           <p className="text-xs text-red-600 mt-1 flex items-center">
             <X className="w-3 h-3 mr-1" />
-            Name must be at least 2 characters and contain only letters
+            {errors.name}
           </p>
         )}
       </div>
@@ -94,20 +102,25 @@ const SignupPage = ({ handleuserSignup, isSignupLoading, setIsSignupLoading }) =
           type="email"
           id="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onBlur={() => setShowEmailError(true)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            clearFieldError("email");
+          }}
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+          className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+            errors.email
+              ? "border-red-300 focus:ring-red-100"
+              : "border-gray-300 focus:ring-gray-900"
+          }`}
           placeholder="you@example.com"
         />
+        {errors.email && (
+          <p className="text-xs text-red-600 mt-1 flex items-center">
+            <X className="w-3 h-3 mr-1" />
+            {errors.email}
+          </p>
+        )}
       </div>
-
-      {showEmailError && !emailRegex.test(email) && email.length > 0 && (
-        <p className="text-xs text-red-600 mt-1 flex items-center">
-          <X className="w-3 h-3 mr-1" />
-          Please enter a valid email address
-        </p>
-      )}
 
       <div className="relative">
         <label
@@ -120,13 +133,27 @@ const SignupPage = ({ handleuserSignup, isSignupLoading, setIsSignupLoading }) =
           type="password"
           id="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            clearFieldError("password");
+            clearFieldError("confirmPassword");
+          }}
           onFocus={() => setShowPasswordRules(true)}
           onBlur={() => setTimeout(() => setShowPasswordRules(false), 200)}
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+          className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+            errors.password
+              ? "border-red-300 focus:ring-red-100"
+              : "border-gray-300 focus:ring-gray-900"
+          }`}
           placeholder="••••••••"
         />
+        {errors.password && (
+          <p className="text-xs text-red-600 mt-1 flex items-center">
+            <X className="w-3 h-3 mr-1" />
+            {errors.password}
+          </p>
+        )}
         {/* Password Rules Tooltip */}
         {showPasswordRules && (
           <div className="absolute z-10 mt-2 p-3 bg-white border border-gray-200 rounded-md shadow-lg w-full">
@@ -166,15 +193,22 @@ const SignupPage = ({ handleuserSignup, isSignupLoading, setIsSignupLoading }) =
           type="password"
           id="confirmPassword"
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            clearFieldError("confirmPassword");
+          }}
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+          className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+            errors.confirmPassword
+              ? "border-red-300 focus:ring-red-100"
+              : "border-gray-300 focus:ring-gray-900"
+          }`}
           placeholder="••••••••"
         />
-        {confirmPassword && password !== confirmPassword && (
+        {errors.confirmPassword && (
           <p className="text-xs text-red-600 mt-1 flex items-center">
             <X className="w-3 h-3 mr-1" />
-            Passwords do not match
+            {errors.confirmPassword}
           </p>
         )}
       </div>
@@ -204,14 +238,13 @@ const SignupPage = ({ handleuserSignup, isSignupLoading, setIsSignupLoading }) =
         </div>
       ) : (
         <button
-          onClick={handleSubmit}
-          type="button"
+          type="submit"
           className="w-full bg-gray-900 text-white py-2.5 px-4 rounded-md font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-colors"
         >
           Create Account
         </button>
       )}
-    </>
+    </form>
   );
 };
 
