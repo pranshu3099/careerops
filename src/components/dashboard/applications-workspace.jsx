@@ -7,8 +7,10 @@ import DeleteApplicationModal from "@/components/modals/delete-application-modal
 import EditApplicationModal from "@/components/modals/edit-application-modal";
 import { useApplications } from "@/context/applications-context";
 import useApplicationStats from "@/hooks/use-application-stats";
+import useDueSoonFollowups from "@/hooks/use-due-soon-followups";
 import useUpcomingFollowups from "@/hooks/use-upcoming-follow-up";
 import { deleteApplication } from "@/lib/applications";
+import { isTerminalApplicationStatus } from "@/lib/application-statuses";
 import {
   Briefcase,
   CalendarClock,
@@ -31,6 +33,8 @@ const STATUS_OPTIONS = [
   { label: "Shortlisted", value: "SHORTLISTED" },
   { label: "Interviewing", value: "INTERVIEWING" },
   { label: "Offered", value: "OFFERED" },
+  { label: "Accepted", value: "ACCEPTED" },
+  { label: "Offer Declined", value: "OFFER_DECLINED" },
   { label: "Rejected", value: "REJECTED" },
 ];
 
@@ -81,6 +85,7 @@ const getLatestFollowup = (application, followUps) => {
 export default function ApplicationsWorkspace({ refreshKey = 0 }) {
   const { applications, refetchApplications, isLoading } = useApplications();
   const { followUps, refetchFollowups } = useUpcomingFollowups();
+  const { refetchDueSoonFollowups } = useDueSoonFollowups();
   const {
     stats,
     isLoading: isStatsLoading,
@@ -95,15 +100,27 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletingId, setDeletingId] = useState("");
   const [cancelledFollowupsAlert, setCancelledFollowupsAlert] = useState(null);
-  const canEditApplication = ["OFFERED", "REJECTED", "GHOSTED"];
+  const nonEditableApplicationStatuses = [
+    "OFFERED",
+    "ACCEPTED",
+    "OFFER_DECLINED",
+    "REJECTED",
+    "GHOSTED",
+  ];
 
   const handleRefreshAfterMutation = useCallback(async () => {
     await Promise.all([
       refetchApplications(),
       refetchFollowups(),
+      refetchDueSoonFollowups(),
       refetchApplicationStats(),
     ]);
-  }, [refetchApplicationStats, refetchApplications, refetchFollowups]);
+  }, [
+    refetchApplicationStats,
+    refetchApplications,
+    refetchDueSoonFollowups,
+    refetchFollowups,
+  ]);
 
   const handleStatusUpdated = useCallback(
     async (application, statusChange) => {
@@ -158,6 +175,18 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
       value: stats?.offered || 0,
       icon: CheckCircle2,
       tone: "bg-emerald-50 text-emerald-600 ring-emerald-100",
+    },
+    {
+      label: "Accepted",
+      value: stats?.accepted || 0,
+      icon: CheckCircle2,
+      tone: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+    },
+    {
+      label: "Offer declined",
+      value: stats?.offerDeclined || 0,
+      icon: XCircle,
+      tone: "bg-orange-50 text-orange-600 ring-orange-100",
     },
     {
       label: "Rejected",
@@ -372,6 +401,7 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
                   {filteredApplications.map((application) => {
                     const status = application?.currentStatus || application?.status;
                     const latestFollowup = getLatestFollowup(application, followUps);
+                    const isTerminalStatus = isTerminalApplicationStatus(status);
 
                     return (
                       <tr
@@ -397,7 +427,7 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
                             <Badge variant={status}>{status}</Badge>
-                            {status !== "INTERVIEWING" && (
+                            {status !== "INTERVIEWING" && !isTerminalStatus && (
                               <StatusTransitionMenu
                                 application={{
                                   ...application,
@@ -408,13 +438,15 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
                                 }
                               />
                             )}
-                            <InterviewActions
-                              application={{
-                                ...application,
-                                currentStatus: status,
-                              }}
-                              onChanged={handleRefreshAfterMutation}
-                            />
+                            {!isTerminalStatus && (
+                              <InterviewActions
+                                application={{
+                                  ...application,
+                                  currentStatus: status,
+                                }}
+                                onChanged={handleRefreshAfterMutation}
+                              />
+                            )}
                           </div>
                         </td>
                         <td className="px-5 py-4 text-sm text-slate-500">
@@ -448,7 +480,7 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
                             >
                               <Eye className="h-3.5 w-3.5" />
                             </button>
-                            {!canEditApplication.includes(status) && (
+                            {!nonEditableApplicationStatuses.includes(status) && (
                               <button
                                 onClick={() => setEditTarget(application)}
                                 className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
