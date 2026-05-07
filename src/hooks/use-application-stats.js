@@ -6,6 +6,8 @@ const EMPTY_STATS = {
   shortlisted: 0,
   interviewing: 0,
   offered: 0,
+  accepted: 0,
+  offerDeclined: 0,
   rejected: 0,
   ghosted: 0,
 };
