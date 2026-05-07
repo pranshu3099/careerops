@@ -1,27 +1,56 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Badge from "./badge";
 import { Eye, Edit, Trash } from "lucide-react";
 import EditApplicationModal from "../modals/edit-application-modal";
 import StatusTransitionMenu from "./statustransition";
 import { deleteApplication } from "@/lib/applications";
-import { useApplications } from "@/context/applications-context";
 import toast from "react-hot-toast";
 import CancelledFollowupsModal from "../modals/cancelled-followups-modal";
 import DeleteApplicationModal from "../modals/delete-application-modal";
 import ApplicationDetailsModal from "../modals/application-details-modal";
 import InterviewActions from "./interview-actions";
-export default function ApplicationsTable({ applications, onStatusUpdated, followUps }) {
+import { useApplications } from "@/context/applications-context";
+import Link from "next/link";
+import { isTerminalApplicationStatus } from "@/lib/application-statuses";
+
+const PAGE_SIZE = 10;
+
+export default function ApplicationsTable({
+  applications,
+  onStatusUpdated,
+  followUps,
+}) {
   const [editTarget, setEditTarget] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletingId, setDeletingId] = useState("");
   const [cancelledFollowupsAlert, setCancelledFollowupsAlert] = useState(null);
-  const { refetchApplications } = useApplications();
-  const canEditApplication = ["OFFERED", "REJECTED", "GHOSTED"];
+  const { applications: contextApplications, refetchApplications } =
+    useApplications();
+  const [currentPage, setCurrentPage] = useState(1);
+  const nonEditableApplicationStatuses = [
+    "OFFERED",
+    "ACCEPTED",
+    "OFFER_DECLINED",
+    "REJECTED",
+    "GHOSTED",
+  ];
+  const tableApplications = contextApplications || [];
+  const totalApplications = tableApplications.length;
+  const totalPages = Math.max(1, Math.ceil(totalApplications / PAGE_SIZE));
+  const pageStartIndex = (currentPage - 1) * PAGE_SIZE;
+  const paginatedApplications = tableApplications.slice(
+    pageStartIndex,
+    pageStartIndex + PAGE_SIZE,
+  );
+  const showingApplications = paginatedApplications.length;
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   const handleStatusUpdated = async (app, statusChange) => {
     await onStatusUpdated?.(statusChange);
-
   };
 
   const handleDeleteApplication = async () => {
@@ -60,9 +89,12 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
               Your latest job applications
             </p>
           </div>
-          <button className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+          <Link
+            href="/dashboard/application"
+            className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
+          >
             View all <span>→</span>
-          </button>
+          </Link>
         </div>
 
         <div className="overflow-x-auto overflow-y-visible">
@@ -87,11 +119,15 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {applications?.map((app) => (
-                <tr
-                  key={app.id}
-                  className="hover:bg-slate-50/70 transition-colors group"
-                >
+              {paginatedApplications.map((app) => {
+                const status = app.currentStatus || app.status;
+                const isTerminalStatus = isTerminalApplicationStatus(status);
+
+                return (
+                  <tr
+                    key={app.id}
+                    className="hover:bg-slate-50/70 transition-colors group"
+                  >
                   <td className="px-6 py-4 overflow-visible">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-600 font-bold text-xs flex-shrink-0">
@@ -106,21 +142,23 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
                     {app.role}
                   </td>
                   <td className="px-6 py-4">
-                    <Badge variant={app.currentStatus}>
-                      {app.currentStatus}
+                    <Badge variant={status}>
+                      {status}
                     </Badge>
-                    {app.currentStatus !== "INTERVIEWING" && (
+                    {status !== "INTERVIEWING" && !isTerminalStatus && (
                       <StatusTransitionMenu
-                        application={app}
+                        application={{ ...app, currentStatus: status }}
                         onStatusUpdated={(statusChange) =>
                           handleStatusUpdated(app, statusChange)
                         }
                       />
                     )}
-                    <InterviewActions
-                      application={app}
-                      onChanged={onStatusUpdated}
-                    />
+                    {!isTerminalStatus && (
+                      <InterviewActions
+                        application={app}
+                        onChanged={onStatusUpdated}
+                      />
+                    )}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-400">
                     {new Date(app.appliedAt).toLocaleDateString("en-US", {
@@ -136,7 +174,7 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
                       >
                         <Eye className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600" />
                       </button>
-                      {!canEditApplication.includes(app.currentStatus) && (
+                      {!nonEditableApplicationStatuses.includes(status) && (
                         <button
                           onClick={() => setEditTarget(app)}
                           className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
@@ -153,19 +191,32 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
                       </button>
                     </div>
                   </td>
-                </tr>
-              ))}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
 
         <div className="px-6 py-3.5 flex items-center justify-between border-t border-slate-50 bg-slate-50/50">
-          <p className="text-xs text-slate-400">Showing 5 of 42 applications</p>
+          <p className="text-xs text-slate-400">
+            Showing {showingApplications} of {totalApplications} applications
+          </p>
           <div className="flex items-center gap-1">
-            <button className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 hover:bg-white border border-slate-200 rounded-lg transition-colors">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 hover:bg-white border border-slate-200 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+            >
               ← Prev
             </button>
-            <button className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 hover:bg-white border border-slate-200 rounded-lg transition-colors">
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() =>
+                setCurrentPage((page) => Math.min(totalPages, page + 1))
+              }
+              className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 hover:bg-white border border-slate-200 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+            >
               Next →
             </button>
           </div>
@@ -177,7 +228,7 @@ export default function ApplicationsTable({ applications, onStatusUpdated, follo
         application={editTarget}
         onClose={() => setEditTarget(null)}
         onApplicationUpdated={onStatusUpdated}
-        followUps = {followUps}
+        followUps={followUps}
       />
 
       <ApplicationDetailsModal
