@@ -17,8 +17,6 @@ const INTERVIEW_TYPES = [
   "OTHER",
 ];
 
-const INTERVIEW_STATUSES = ["SCHEDULED", "COMPLETED", "CANCELLED"];
-
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition-colors focus:border-indigo-200 focus:ring-2 focus:ring-indigo-50 disabled:cursor-not-allowed disabled:bg-slate-50";
 
@@ -41,19 +39,17 @@ export default function InterviewFormModal({
   mode = "create",
   applicationId,
   defaultRound = 1,
+  roundLabel,
   interview,
   onClose,
   onSaved,
 }) {
   const isEditMode = mode === "edit";
-  const isCancelled = interview?.status === "CANCELLED";
   const [formData, setFormData] = useState({
-    round: defaultRound,
     roundName: "",
     type: "TECHNICAL",
     interviewer: "",
     scheduledAt: "",
-    status: "SCHEDULED",
     feedback: "",
   });
   const [errors, setErrors] = useState({});
@@ -76,15 +72,13 @@ export default function InterviewFormModal({
 
     setErrors({});
     setFormData({
-      round: interview?.round || defaultRound,
       roundName: interview?.roundName || "",
       type: interview?.type || "TECHNICAL",
       interviewer: interview?.interviewer || "",
       scheduledAt: toDateTimeLocal(interview?.scheduledAt),
-      status: interview?.status || "SCHEDULED",
       feedback: interview?.feedback || "",
     });
-  }, [defaultRound, interview, isOpen]);
+  }, [interview, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -122,9 +116,7 @@ export default function InterviewFormModal({
 
   const validate = () => {
     const nextErrors = {};
-    if (!String(formData.round).trim() || Number(formData.round) < 1) {
-      nextErrors.round = "Required";
-    }
+    if (!isEditMode && !applicationId) nextErrors.applicationId = "Required";
     if (!formData.type) nextErrors.type = "Required";
     if (!formData.scheduledAt) nextErrors.scheduledAt = "Required";
 
@@ -139,7 +131,6 @@ export default function InterviewFormModal({
     try {
       setIsSubmitting(true);
       const payload = {
-        round: Number(formData.round),
         roundName: formData.roundName.trim() || undefined,
         type: formData.type,
         interviewer: formData.interviewer.trim() || undefined,
@@ -149,12 +140,14 @@ export default function InterviewFormModal({
       if (isEditMode) {
         await updateInterview(interview?.id || interview?.interviewId, {
           ...payload,
-          status: formData.status,
           feedback: formData.feedback.trim() || undefined,
         });
         toast.success("Interview updated");
       } else {
-        await createInterview(payload);
+        await createInterview({
+          ...payload,
+          applicationId,
+        });
         toast.success("Interview scheduled");
       }
 
@@ -190,7 +183,9 @@ export default function InterviewFormModal({
             <div>
               <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
               <p className="mt-0.5 text-xs text-slate-400">
-                {isEditMode ? "Update round details" : "Add a new interview round"}
+                {isEditMode
+                  ? `Update ${interview?.round ? `Round ${interview.round}` : "round"} details`
+                  : roundLabel || `Add Round ${defaultRound}`}
               </p>
             </div>
           </div>
@@ -204,20 +199,6 @@ export default function InterviewFormModal({
 
         <form onSubmit={handleSubmit} className="space-y-4 px-5 py-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Round <span className="text-rose-400">*</span>
-              </label>
-              <input
-                type="number"
-                min="1"
-                name="round"
-                value={formData.round}
-                onChange={handleChange}
-                className={inputClass}
-              />
-              {errors.round && <p className="mt-1 text-xs text-rose-500">{errors.round}</p>}
-            </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Type <span className="text-rose-400">*</span>
@@ -268,51 +249,26 @@ export default function InterviewFormModal({
                 name="scheduledAt"
                 value={formData.scheduledAt}
                 onChange={handleChange}
-                disabled={isCancelled}
                 className={inputClass}
               />
-              {isCancelled && (
-                <p className="mt-1 text-xs text-slate-400">
-                  Cancelled interviews cannot be rescheduled.
-                </p>
-              )}
               {errors.scheduledAt && (
                 <p className="mt-1 text-xs text-rose-500">{errors.scheduledAt}</p>
               )}
             </div>
             {isEditMode && (
-              <>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Status
-                  </label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                    className={inputClass}
-                  >
-                    {INTERVIEW_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Feedback
-                  </label>
-                  <textarea
-                    name="feedback"
-                    value={formData.feedback}
-                    onChange={handleChange}
-                    rows={3}
-                    className={`${inputClass} resize-y`}
-                    placeholder="Notes or feedback"
-                  />
-                </div>
-              </>
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Feedback
+                </label>
+                <textarea
+                  name="feedback"
+                  value={formData.feedback}
+                  onChange={handleChange}
+                  rows={3}
+                  className={`${inputClass} resize-y`}
+                  placeholder="Notes or feedback"
+                />
+              </div>
             )}
           </div>
 
