@@ -40,7 +40,7 @@ export default function AuthScreen() {
         router.push("/verify-email");
       }
     } catch (err) {
-      setIsLoading(false);
+      setIsSignupLoading(false);
       setSignupError(err.message);
     }
   };
