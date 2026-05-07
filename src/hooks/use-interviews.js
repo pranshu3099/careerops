@@ -1,4 +1,5 @@
 import { getInterviewsByApplication } from "@/lib/interviews";
+import { getNextRound } from "@/lib/interview-rounds";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const getTime = (value) => {
@@ -53,14 +54,7 @@ export default function useInterviews(applicationId, enabled = true) {
     };
   }, [refetchInterviews]);
 
-  const nextRound = useMemo(
-    () =>
-      interviews.reduce(
-        (maxRound, interview) => Math.max(maxRound, Number(interview?.round) || 0),
-        0,
-      ) + 1,
-    [interviews],
-  );
+  const nextRound = useMemo(() => getNextRound(interviews), [interviews]);
 
   return {
     interviews,
