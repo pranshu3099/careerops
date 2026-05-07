@@ -6,13 +6,16 @@ import { ChevronDown, Loader2, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { updateApplicationStatus } from '@/lib/applications';
 import { useApplications } from '@/context/applications-context';
+import useApplicationStats from '@/hooks/use-application-stats';
+import useDueSoonFollowups from '@/hooks/use-due-soon-followups';
+import useUpcomingFollowups from '@/hooks/use-upcoming-follow-up';
 
 // ── Transition map ──────────────────────────────────────────────────────────
 const TRANSITIONS = {
   APPLIED:      ['SHORTLISTED', 'REJECTED'],
   SHORTLISTED:  ['INTERVIEWING'],
   INTERVIEWING: ['OFFERED', 'REJECTED'],
-  // OFFERED / REJECTED → terminal, no transitions
+  OFFERED:      ['ACCEPTED', 'OFFER_DECLINED'],
 };
 
 export function getNextStatuses(currentStatus) {
@@ -40,11 +43,26 @@ const STATUS_STYLES = {
     dot: 'bg-emerald-400',
     label: 'Offer',
   },
+  ACCEPTED: {
+    btn: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ring-1 ring-emerald-100',
+    dot: 'bg-emerald-500',
+    label: 'Accepted',
+  },
+  OFFER_DECLINED: {
+    btn: 'bg-orange-50 text-orange-600 hover:bg-orange-100 ring-1 ring-orange-100',
+    dot: 'bg-orange-400',
+    label: 'Offer Declined',
+  },
   REJECTED: {
     btn: 'bg-rose-50 text-rose-500 hover:bg-rose-100 ring-1 ring-rose-100',
     dot: 'bg-rose-400',
     label: 'Reject',
   },
+};
+
+const SUCCESS_MESSAGES = {
+  ACCEPTED: 'Application marked as accepted',
+  OFFER_DECLINED: 'Offer marked as declined',
 };
 
 // ── Single action button (one next status) ──────────────────────────────────
@@ -190,6 +208,9 @@ function DropdownMenu({ nexts, onSelect, loading }) {
 // ── Main export ─────────────────────────────────────────────────────────────
 export default function StatusTransitionMenu({ application, onStatusUpdated }) {
   const { refetchApplications } = useApplications();
+  const { refetchFollowups } = useUpcomingFollowups();
+  const { refetchDueSoonFollowups } = useDueSoonFollowups();
+  const { refetchApplicationStats } = useApplicationStats();
   const [loading, setLoading] = useState(false);
   const nexts = getNextStatuses(application.currentStatus);
   if (nexts.length === 0) return null; // terminal status — render nothing
@@ -200,13 +221,21 @@ export default function StatusTransitionMenu({ application, onStatusUpdated }) {
     try {
       setLoading(true);
       const result = await updateApplicationStatus(application.id, newStatus);
-      await refetchApplications();
+      await Promise.all([
+        refetchApplications(),
+        refetchFollowups(),
+        refetchDueSoonFollowups(),
+        refetchApplicationStats(),
+      ]);
       await onStatusUpdated?.({
         previousStatus: application.currentStatus,
         newStatus,
         result,
       });
-      toast.success(`Moved to ${STATUS_STYLES[newStatus]?.label ?? newStatus}`);
+      toast.success(
+        SUCCESS_MESSAGES[newStatus] ||
+          `Moved to ${STATUS_STYLES[newStatus]?.label ?? newStatus}`,
+      );
     } catch (err) {
       toast.error(err?.message || 'Failed to update status');
     } finally {
