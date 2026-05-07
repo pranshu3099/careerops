@@ -2,7 +2,9 @@ import Badge from "@/components/dashboard/badge";
 import StatusTransitionMenu, { getNextStatuses } from "@/components/dashboard/statustransition";
 import ApplicationDetailsModal from "@/components/modals/application-details-modal";
 import { useApplications } from "@/context/applications-context";
+import useApplicationStats from "@/hooks/use-application-stats";
 import useUserFollowups from "@/hooks/use-all-followups";
+import useDueSoonFollowups from "@/hooks/use-due-soon-followups";
 import useUpcomingFollowups from "@/hooks/use-upcoming-follow-up";
 import {
   AlertCircle,
@@ -176,6 +178,8 @@ function FollowupSection({ title, count, children }) {
 export default function FollowupsWorkspace({ refreshKey = 0 }) {
   const { followups, isLoading, error, refetchFollowups } = useUserFollowups();
   const { refetchApplications } = useApplications();
+  const { refetchApplicationStats } = useApplicationStats();
+  const { refetchDueSoonFollowups } = useDueSoonFollowups();
   const { refetchFollowups: refetchUpcomingFollowups } = useUpcomingFollowups();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -188,8 +192,16 @@ export default function FollowupsWorkspace({ refreshKey = 0 }) {
       refetchFollowups(),
       refetchApplications(),
       refetchUpcomingFollowups(),
+      refetchDueSoonFollowups(),
+      refetchApplicationStats(),
     ]);
-  }, [refetchApplications, refetchFollowups, refetchUpcomingFollowups]);
+  }, [
+    refetchApplicationStats,
+    refetchApplications,
+    refetchDueSoonFollowups,
+    refetchFollowups,
+    refetchUpcomingFollowups,
+  ]);
 
   const handleStatusUpdated = useCallback(
     async (followup, statusChange) => {
