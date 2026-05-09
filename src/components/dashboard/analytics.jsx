@@ -12,6 +12,7 @@ import {
   Legend,
 } from "recharts";
 import { useMemo } from "react";
+import Link from "next/link";
 import Card from "./card";
 import { useApplications } from "@/context/applications-context";
 
@@ -119,6 +120,12 @@ export default function Analytics() {
           <h2 className="text-sm font-semibold text-slate-800">Analytics Overview</h2>
           <p className="text-xs text-slate-400 mt-0.5">Track your application performance</p>
         </div>
+        <Link
+          href="/dashboard/analytics"
+          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-600 shadow-sm transition-colors hover:bg-indigo-50 hover:border-indigo-100"
+        >
+          View full analytics
+        </Link>
       </div>
 
       {error && (
