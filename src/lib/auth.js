@@ -1,3 +1,5 @@
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 export function hasRefreshToken(req) {
   const cookieHeader = req?.headers?.cookie || "";
   return cookieHeader
@@ -6,7 +8,7 @@ export function hasRefreshToken(req) {
 }
 
 export const handleManualLogin = async ({ email, password }) => {
-  const response = await fetch("http://localhost:3000/auth/login", {
+  const response = await fetch(`${BACKEND_URL}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -25,7 +27,7 @@ export const handleManualLogin = async ({ email, password }) => {
 };
 
 export const handleSignup = async ({ name, email, password }) => {
-  const response = await fetch("http://localhost:3000/auth/register", {
+  const response = await fetch(`${BACKEND_URL}/auth/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -46,7 +48,7 @@ export const handleSignup = async ({ name, email, password }) => {
 
 export const handleLogout = async () => {
   try {
-    const response = await fetch("http://localhost:3000/auth/logout", {
+    const response = await fetch(`${BACKEND_URL}/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
