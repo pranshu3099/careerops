@@ -2,6 +2,7 @@ let accessToken = null;
 let currentUserId = null;
 let currentUserName = null;
 let currentUserEmail = null;
+let refreshAccessTokenPromise = null;
 
 const AUTH_REQUEST_TIMEOUT_MS = 8000;
 
@@ -46,7 +47,7 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = AUTH_REQUEST_TIME
   }
 };
 
-const extractAccessToken = (payload) => payload?.accessToken 
+const extractAccessToken = (payload) => payload?.accessToken;
 
 export const apiFetch = async (url, options = {}, hasRetried = false) => {
   const token = getAccessToken();
@@ -76,6 +77,18 @@ export const apiFetch = async (url, options = {}, hasRetried = false) => {
 };
 
 export const refreshAccessToken = async () => {
+  if (refreshAccessTokenPromise) {
+    return refreshAccessTokenPromise;
+  }
+
+  refreshAccessTokenPromise = refreshAccessTokenRequest().finally(() => {
+    refreshAccessTokenPromise = null;
+  });
+
+  return refreshAccessTokenPromise;
+};
+
+const refreshAccessTokenRequest = async () => {
   try {
     const res = await fetchWithTimeout(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/refresh`,
