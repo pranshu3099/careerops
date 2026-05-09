@@ -57,6 +57,7 @@ Main routes:
 | `/dashboard/application` | Full applications management workspace. |
 | `/dashboard/application/interview` | Interview management workspace. |
 | `/dashboard/followups` | Follow-up review workspace. |
+| `/dashboard/analytics` | Dedicated analytics workspace for pipeline, funnel, timeline, source, interview, and time metrics. |
 | `/dashboard/settings` | User settings for follow-up alerts. |
 | `/dashboard/profile` | Read-only profile and account logout page. |
 
@@ -100,7 +101,7 @@ Dashboard sections:
 - Due-soon follow-up alerts.
 - Recent applications table.
 - Upcoming follow-ups panel.
-- Analytics overview.
+- Analytics overview with a link to the full analytics workspace.
 
 The summary cards use live data for:
 
@@ -370,20 +371,55 @@ Profile editing is not exposed until backend support exists.
 
 ## Analytics
 
-The dashboard analytics card uses real application data from context.
+CareerOps has a dedicated analytics workspace at:
 
-Current analytics:
+`/dashboard/analytics`
 
-- Applications per week for the latest six weeks.
-- Status distribution across the user's applications.
+The sidebar Analytics item routes directly to this page. The dashboard home also keeps a compact analytics overview card and exposes a View full analytics action that links to the dedicated workspace.
 
-The weekly chart groups applications by applied date. Each week starts on Monday and ends before the next Monday. The status chart counts applications by current status.
+Analytics are powered by backend aggregate endpoints. The frontend formats and displays returned metrics; it does not derive funnel, time metrics, timeline, source performance, or interview performance from raw application data.
 
-The analytics component handles:
+Analytics API endpoints:
+
+- `GET /analytics/overview`
+- `GET /analytics/funnel`
+- `GET /analytics/timeline?range=90d&bucket=week`
+- `GET /analytics/sources`
+- `GET /analytics/interviews`
+- `GET /analytics/time-metrics`
+
+Analytics sections:
+
+- Pipeline Overview: total applications, active applications, interviews, offers, accepted, rejected, and ghosted.
+- Funnel: compact aggregate conversion summary for Applied, Shortlisted, Interviewing, Offered, and Accepted.
+- Application Journey Progress: per-application journey rows from `funnel.journeys`, including company, role, status path, progress percentage, and current/final status badge.
+- Time Metrics: average time to first interview, interview to offer, and final outcome.
+- Source Performance: applications, offers, accepted outcomes, and rejections grouped by source.
+- Interview Performance: scheduled/completed/cancelled counts, result counts, interview type chart, average rounds before offer, and cancelled interview count.
+- Activity Timeline: applications added, status changes, interviews scheduled, and follow-ups completed over time.
+
+Funnel behavior:
+
+- Aggregate stages show count, percentage of all applications, and percentage from the previous stage where applicable.
+- Applied is treated as the starting stage and shows total applications rather than conversion percentages.
+- Journey rows use `journey.path` when available and fall back to `journey.reachedStages`.
+- Active applications are shown as in progress.
+- Terminal outcomes are visually distinguished: Rejected is red, Ghosted is muted gray, Accepted is green, and Offer Declined is neutral/amber.
+
+Activity Timeline behavior:
+
+- Supported ranges are `30d`, `90d`, `180d`, and `1y`.
+- Supported buckets are `week` and `month`.
+- Changing range or bucket refetches only `/analytics/timeline`.
+- The main Refresh action refetches all analytics aggregate endpoints.
+
+The analytics workspace handles:
 
 - Loading state.
 - Error state.
-- Empty state when no applications exist.
+- Retry actions.
+- Empty states when aggregate sections have no data.
+- Separate timeline loading and error states so timeline controls do not reload unrelated analytics sections.
 
 ## State Management and Data Fetching
 
@@ -399,6 +435,7 @@ Important state/data modules:
 - `useUserFollowups`: Loads all follow-ups.
 - `useInterviews`: Loads interviews for one application.
 - `useAllApplicationInterviews`: Loads and groups interviews across applications.
+- `useAnalytics`: Loads analytics aggregates and separately refetches timeline metrics when range or bucket changes.
 
 Hooks use mounted-state guards where needed to avoid setting state after a component unmounts.
 
@@ -411,6 +448,7 @@ Primary API helpers:
 - `api.js`: Token state, authenticated fetch wrapper, refresh token flow, and current user sync.
 - `auth.js`: Login, signup, and logout helpers.
 - `applications.js`: Application, stats, follow-up, due-soon, status update, edit, and delete helpers.
+- `analytics.js`: Analytics overview, funnel, timeline, source, interview, and time metric helpers.
 - `interviews.js`: Interview list, create, update, and result helpers.
 - `settings.js`: Follow-up alert settings helpers.
 
@@ -462,22 +500,18 @@ Current frontend limitations:
 - Profile editing is not implemented.
 - Email reminder settings are not exposed.
 - Follow-up cancel and ignore actions are not exposed.
-- Analytics are currently dashboard-level and derived from loaded application data.
-- The sidebar includes an Analytics item, but analytics currently appears inside the main dashboard overview.
 - Some auth behavior depends on backend cookie and OAuth redirect configuration.
 
 ## Future Opportunities
 
 Possible frontend improvements:
 
-- Dedicated analytics page.
 - Profile editing.
 - Account security settings.
 - Email reminder preferences.
 - Follow-up cancellation when backend support is available.
-- Application activity timeline.
 - Ghosting insights UI.
-- Advanced analytics by source, company, role, and response time.
+- Additional analytics drilldowns by company, role, and response time.
 - Export applications to CSV.
 - Global search across applications, follow-ups, and interviews.
 - Notification center for due-soon alerts and interview reminders.
