@@ -1,7 +1,7 @@
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { handleLogout } from "@/lib/auth";
-import { Bell, Loader2, Menu } from "lucide-react";
+import { Bell, Loader2, LogOut, Menu, Settings, User } from "lucide-react";
 import { useState } from "react";
 import useCurrentUser from "@/hooks/use-current-user";
 import AddApplicationModal from "../modals/add-application-modal";
@@ -57,12 +57,12 @@ export default function Navbar({ onMobileMenuClick, onApplicationCreated }) {
             <span className="sm:hidden">Add</span>
           </button>
  
-          <button className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors">
+          {/* <button className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors">
             <Bell className="w-5 h-5 text-slate-500" />
             <span className="absolute top-1.5 right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-white">
               3
             </span>
-          </button>
+          </button> */}
  
           <div className="relative">
             <button
@@ -88,10 +88,10 @@ export default function Navbar({ onMobileMenuClick, onApplicationCreated }) {
                   <p className="text-slate-400 text-xs mt-0.5">{userEmail}</p>
                 </div>
                 <Link href="/dashboard/profile" className="flex px-4 py-2.5 hover:bg-slate-50 items-center gap-2.5 text-slate-600 transition-colors">
-                  <span>👤</span> Profile
+                  <User className="h-4 w-4" /> Profile
                 </Link>
                 <Link href="/dashboard/settings" className="flex px-4 py-2.5 hover:bg-slate-50 items-center gap-2.5 text-slate-600 transition-colors">
-                  <span>⚙️</span> Settings
+                  <Settings className="h-4 w-4" /> Settings
                 </Link>
                 <div className="border-t border-slate-50 my-1" />
                 <button
@@ -102,7 +102,7 @@ export default function Navbar({ onMobileMenuClick, onApplicationCreated }) {
                   {isLoggingOut ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <span>←</span>
+                    <LogOut className="h-4 w-4" />
                   )}
                   {isLoggingOut ? "Logging out..." : "Logout"}
                 </button>
