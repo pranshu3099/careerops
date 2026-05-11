@@ -1,9 +1,16 @@
 import { handleManualLogin, handleSignup } from "@/lib/auth";
 import { useState } from "react";
 import ManualAuth from "./manualauth";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import toast from "react-hot-toast";
 import { setAccessToken, syncCurrentUser } from "@/lib/api";
+
+const getSafeRedirectPath = (value) => {
+  if (!value || typeof value !== "string") return "/dashboard";
+  if (!value.startsWith("/") || value.startsWith("//")) return "/dashboard";
+  if (value === "/") return "/dashboard";
+  return value;
+};
 
 export default function AuthScreen() {
   const [mode, setMode] = useState("login");
@@ -13,6 +20,7 @@ export default function AuthScreen() {
   const [isSignupLoading, setIsSignupLoading] = useState(false);
   const isLogin = mode === "login";
   const router = useRouter();
+  const redirectPath = getSafeRedirectPath(router.query?.next);
   const handleGoogleAuth = () => {
     window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google`;
   };
@@ -23,7 +31,7 @@ export default function AuthScreen() {
       if(res?.success){
         setAccessToken(res?.data?.accessToken)
         await syncCurrentUser();
-        router.push('/dashboard')
+        router.push(redirectPath)
         toast.success("logged in successfully")
       }
       // localStorage.setItem("accessToken", res?.data?.accessToken);
