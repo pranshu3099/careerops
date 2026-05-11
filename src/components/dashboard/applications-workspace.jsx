@@ -11,6 +11,7 @@ import useDueSoonFollowups from "@/hooks/use-due-soon-followups";
 import useUpcomingFollowups from "@/hooks/use-upcoming-follow-up";
 import { deleteApplication } from "@/lib/applications";
 import { isTerminalApplicationStatus } from "@/lib/application-statuses";
+import { useRouter } from "next/router";
 import {
   Briefcase,
   CalendarClock,
@@ -24,7 +25,7 @@ import {
   Trash,
   XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 const STATUS_OPTIONS = [
@@ -83,6 +84,7 @@ const getLatestFollowup = (application, followUps) => {
 };
 
 export default function ApplicationsWorkspace({ refreshKey = 0 }) {
+  const router = useRouter();
   const { applications, refetchApplications, isLoading } = useApplications();
   const { followUps, refetchFollowups } = useUpcomingFollowups();
   const { refetchDueSoonFollowups } = useDueSoonFollowups();
@@ -100,6 +102,7 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletingId, setDeletingId] = useState("");
   const [cancelledFollowupsAlert, setCancelledFollowupsAlert] = useState(null);
+  const openedApplicationIdRef = useRef("");
   const nonEditableApplicationStatuses = [
     "OFFERED",
     "ACCEPTED",
@@ -139,6 +142,30 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
     if (!refreshKey) return;
     handleRefreshAfterMutation();
   }, [handleRefreshAfterMutation, refreshKey]);
+
+  useEffect(() => {
+    const applicationId = router.query?.applicationId;
+    if (!applicationId || typeof applicationId !== "string") return;
+    if (openedApplicationIdRef.current === applicationId) return;
+
+    const targetApplication = applications?.find(
+      (application) => application?.id === applicationId,
+    );
+
+    if (!targetApplication) return;
+
+    openedApplicationIdRef.current = applicationId;
+    setViewTarget(targetApplication);
+  }, [applications, router.query?.applicationId]);
+
+  const closeViewModal = () => {
+    setViewTarget(null);
+
+    if (router.query?.applicationId) {
+      openedApplicationIdRef.current = "";
+      router.replace("/dashboard/application", undefined, { shallow: true });
+    }
+  };
 
   const totalApplications = Object.values(stats || {}).reduce(
     (total, value) => total + (Number(value) || 0),
@@ -522,9 +549,7 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
             : null
         }
         mode="view"
-        onClose={() => {
-          setViewTarget(null);
-        }}
+        onClose={closeViewModal}
         onStatusUpdated={handleRefreshAfterMutation}
       />
 
