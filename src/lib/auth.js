@@ -1,3 +1,6 @@
+import { authFetch, clearAuthState } from "@/lib/api";
+import { clearCsrfToken } from "@/lib/csrf";
+
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export function hasRefreshToken(req) {
@@ -48,10 +51,15 @@ export const handleSignup = async ({ name, email, password }) => {
 
 export const handleLogout = async () => {
   try {
-    const response = await fetch(`${BACKEND_URL}/auth/logout`, {
+    const response = await authFetch(`${BACKEND_URL}/auth/logout`, {
       method: "POST",
-      credentials: "include",
     });
+
+    if (response.ok) {
+      clearAuthState();
+      clearCsrfToken();
+    }
+
     return response;
   } catch (err) {
     console.log(err);
