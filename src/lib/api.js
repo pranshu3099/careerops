@@ -1,3 +1,5 @@
+import { clearCsrfToken, getCsrfToken } from "@/lib/csrf";
+
 let accessToken = null;
 let currentUserId = null;
 let currentUserName = null;
@@ -11,6 +13,13 @@ export const setAccessToken = (token) => {
 };
 
 export const getAccessToken = () => accessToken;
+export const clearAuthState = () => {
+  accessToken = null;
+  currentUserId = null;
+  currentUserName = null;
+  currentUserEmail = null;
+};
+
 export const setCurrentUserId = (userId) => {
   currentUserId = userId;
 };
@@ -48,6 +57,36 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = AUTH_REQUEST_TIME
 };
 
 const extractAccessToken = (payload) => payload?.accessToken;
+
+const redirectToLoginIfProtected = () => {
+  if (typeof window === "undefined") return;
+  if (!window.location.pathname.startsWith("/dashboard")) return;
+
+  const nextPath = `${window.location.pathname}${window.location.search}`;
+  window.location.assign(`/?next=${encodeURIComponent(nextPath)}`);
+};
+
+export const authFetch = async (url, options = {}, hasRetriedCsrf = false) => {
+  const csrfToken = await getCsrfToken({
+    forceRefresh: hasRetriedCsrf,
+  });
+
+  const response = await fetchWithTimeout(url, {
+    ...options,
+    credentials: "include",
+    headers: {
+      ...(options.headers || {}),
+      "x-csrf-token": csrfToken,
+    },
+  });
+
+  if (response.status === 403 && !hasRetriedCsrf) {
+    clearCsrfToken();
+    return authFetch(url, options, true);
+  }
+
+  return response;
+};
 
 export const apiFetch = async (url, options = {}, hasRetried = false) => {
   const token = getAccessToken();
@@ -90,37 +129,40 @@ export const refreshAccessToken = async () => {
 
 const refreshAccessTokenRequest = async () => {
   try {
-    const res = await fetchWithTimeout(
+    const res = await authFetch(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/refresh`,
       {
         method: "POST",
-        credentials: "include",
       },
     );
 
-    if (!res.ok) return false;
+    if (!res.ok) {
+      clearAuthState();
+      redirectToLoginIfProtected();
+      return false;
+    }
 
     const data = await res.json().catch(() => null);
     const token = extractAccessToken(data);
 
     if (!token) {
-      setAccessToken(null);
+      clearAuthState();
+      redirectToLoginIfProtected();
       return false;
     }
 
     setAccessToken(token);
     return true;
   } catch (err) {
-    setAccessToken(null);
+    clearAuthState();
+    redirectToLoginIfProtected();
     return false;
   }
 };
 
 export const syncCurrentUser = async () => {
   if (!getAccessToken()) {
-    setCurrentUserId(null);
-    setCurrentUserName(null);
-    setCurrentUserEmail(null);
+    clearAuthState();
     return null;
   }
 
@@ -134,9 +176,7 @@ export const syncCurrentUser = async () => {
     );
 
     if (!res?.ok) {
-      setCurrentUserId(null);
-      setCurrentUserName(null);
-      setCurrentUserEmail(null);
+      clearAuthState();
       return null;
     }
 
@@ -147,9 +187,7 @@ export const syncCurrentUser = async () => {
     setCurrentUserEmail(userEmail);
     return userId;
   } catch (err) {
-    setCurrentUserId(null);
-    setCurrentUserName(null);
-    setCurrentUserEmail(null);
+    clearAuthState();
     return null;
   }
 };
