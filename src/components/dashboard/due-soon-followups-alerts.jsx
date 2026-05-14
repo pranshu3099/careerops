@@ -25,7 +25,7 @@ export default function DueSoonFollowupsAlerts({ onFollowupsChanged }) {
     isLoading,
     error,
     refetchDueSoonFollowups,
-  } = useDueSoonFollowups();
+  } = useDueSoonFollowups({ autoFetch: true });
   const { refetchApplications } = useApplications();
   const [dismissedIds, setDismissedIds] = useState(() => new Set());
   const [modalState, setModalState] = useState({ mode: "", followup: null });
