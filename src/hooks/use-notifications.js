@@ -4,6 +4,7 @@ import {
   getUnreadNotificationCount,
   markAllNotificationsRead,
   markNotificationRead,
+  NOTIFICATIONS_REFRESH_EVENT,
 } from "@/lib/notifications";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -136,6 +137,28 @@ export default function useNotifications() {
       isMountedRef.current = false;
     };
   }, [refreshUnreadCount]);
+
+  useEffect(() => {
+    const handleNotificationsRefresh = async () => {
+      await refreshUnreadCount();
+
+      if (hasLoadedNotifications) {
+        await refetchNotifications();
+      }
+    };
+
+    window.addEventListener(
+      NOTIFICATIONS_REFRESH_EVENT,
+      handleNotificationsRefresh,
+    );
+
+    return () => {
+      window.removeEventListener(
+        NOTIFICATIONS_REFRESH_EVENT,
+        handleNotificationsRefresh,
+      );
+    };
+  }, [hasLoadedNotifications, refetchNotifications, refreshUnreadCount]);
 
   return {
     notifications,
