@@ -12,7 +12,7 @@ const EMPTY_STATS = {
   ghosted: 0,
 };
 
-export default function useApplicationStats() {
+export default function useApplicationStats({ autoFetch = false } = {}) {
   const [stats, setStats] = useState(EMPTY_STATS);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -46,12 +46,15 @@ export default function useApplicationStats() {
 
   useEffect(() => {
     isMountedRef.current = true;
-    refetchApplicationStats();
+
+    if (autoFetch) {
+      refetchApplicationStats();
+    }
 
     return () => {
       isMountedRef.current = false;
     };
-  }, [refetchApplicationStats]);
+  }, [autoFetch, refetchApplicationStats]);
 
   return {
     stats,
