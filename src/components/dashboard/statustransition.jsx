@@ -6,9 +6,6 @@ import { ChevronDown, Loader2, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { updateApplicationStatus } from '@/lib/applications';
 import { useApplications } from '@/context/applications-context';
-import useApplicationStats from '@/hooks/use-application-stats';
-import useDueSoonFollowups from '@/hooks/use-due-soon-followups';
-import useUpcomingFollowups from '@/hooks/use-upcoming-follow-up';
 
 // ── Transition map ──────────────────────────────────────────────────────────
 const TRANSITIONS = {
@@ -208,9 +205,6 @@ function DropdownMenu({ nexts, onSelect, loading }) {
 // ── Main export ─────────────────────────────────────────────────────────────
 export default function StatusTransitionMenu({ application, onStatusUpdated }) {
   const { refetchApplications } = useApplications();
-  const { refetchFollowups } = useUpcomingFollowups();
-  const { refetchDueSoonFollowups } = useDueSoonFollowups();
-  const { refetchApplicationStats } = useApplicationStats();
   const [loading, setLoading] = useState(false);
   const nexts = getNextStatuses(application.currentStatus);
   if (nexts.length === 0) return null; // terminal status — render nothing
@@ -223,9 +217,6 @@ export default function StatusTransitionMenu({ application, onStatusUpdated }) {
       const result = await updateApplicationStatus(application.id, newStatus);
       await Promise.all([
         refetchApplications(),
-        refetchFollowups(),
-        refetchDueSoonFollowups(),
-        refetchApplicationStats(),
       ]);
       await onStatusUpdated?.({
         previousStatus: application.currentStatus,
