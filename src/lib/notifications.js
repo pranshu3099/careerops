@@ -1,6 +1,7 @@
 import { apiFetch } from "@/lib/api";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+export const NOTIFICATIONS_REFRESH_EVENT = "careerops:notifications-refresh";
 
 const getResponseError = (payload, fallback) => {
   if (!payload) return fallback;
@@ -78,3 +79,8 @@ export const deleteNotification = (notificationId) =>
     { method: "DELETE" },
     "Failed to delete notification",
   );
+
+export const requestNotificationsRefresh = () => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(NOTIFICATIONS_REFRESH_EVENT));
+};
