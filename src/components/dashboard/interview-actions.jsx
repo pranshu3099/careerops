@@ -1,13 +1,11 @@
 import InterviewFormModal from "@/components/modals/interview-form-modal";
 import InterviewResultModal from "@/components/modals/interview-result-modal";
 import { useApplications } from "@/context/applications-context";
-import useApplicationStats from "@/hooks/use-application-stats";
-import useDueSoonFollowups from "@/hooks/use-due-soon-followups";
 import useInterviews from "@/hooks/use-interviews";
-import useUpcomingFollowups from "@/hooks/use-upcoming-follow-up";
 import { updateApplicationStatus } from "@/lib/applications";
 import { getAddRoundLabel, getLatestInterview } from "@/lib/interview-rounds";
 import { cancelInterview } from "@/lib/interviews";
+import { requestNotificationsRefresh } from "@/lib/notifications";
 import { ChevronDown, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -23,9 +21,6 @@ export default function InterviewActions({
   const status = String(application?.currentStatus || application?.status || "").toUpperCase();
   const isInterviewing = status === "INTERVIEWING";
   const { refetchApplications } = useApplications();
-  const { refetchApplicationStats } = useApplicationStats();
-  const { refetchDueSoonFollowups } = useDueSoonFollowups();
-  const { refetchFollowups } = useUpcomingFollowups();
   const {
     interviews,
     nextRound,
@@ -39,15 +34,16 @@ export default function InterviewActions({
     [interviews],
   );
 
-  const refreshAll = async (statusChange) => {
+  const refreshAll = async (statusChange, { refreshNotifications = false } = {}) => {
     await Promise.all([
       refetchInterviews(),
       refetchApplications(),
-      refetchFollowups(),
-      refetchDueSoonFollowups(),
-      refetchApplicationStats(),
       onChanged?.(statusChange),
     ]);
+
+    if (refreshNotifications) {
+      requestNotificationsRefresh();
+    }
   };
 
   if (!isInterviewing) return null;
@@ -72,7 +68,10 @@ export default function InterviewActions({
     try {
       await updateApplicationStatus(application.id, newStatus);
       setProceedOpen(false);
-      await refreshAll({ previousStatus: "INTERVIEWING", newStatus });
+      await refreshAll(
+        { previousStatus: "INTERVIEWING", newStatus },
+        { refreshNotifications: true },
+      );
       toast.success(`Moved to ${newStatus}`);
     } catch (error) {
       toast.error(error?.message || "Failed to update status");
@@ -82,7 +81,7 @@ export default function InterviewActions({
   const handleCancelInterview = async () => {
     try {
       await cancelInterview(latestInterview?.id || latestInterview?.interviewId);
-      await refreshAll();
+      await refreshAll(undefined, { refreshNotifications: true });
       toast.success("Interview cancelled");
     } catch (error) {
       toast.error(error?.message || "Failed to cancel interview");
@@ -168,7 +167,7 @@ export default function InterviewActions({
         defaultRound={formState.round}
         roundLabel={addRoundLabel}
         onClose={() => setFormState({ open: false, round: nextRound })}
-        onSaved={refreshAll}
+        onSaved={() => refreshAll(undefined, { refreshNotifications: true })}
       />
 
       <InterviewResultModal
@@ -176,7 +175,10 @@ export default function InterviewActions({
         interview={resultTarget}
         onClose={() => setResultTarget(null)}
         onSaved={async (result) => {
-          await refreshAll(result === "FAILED" ? { newStatus: "REJECTED" } : undefined);
+          await refreshAll(
+            result === "FAILED" ? { newStatus: "REJECTED" } : undefined,
+            { refreshNotifications: true },
+          );
         }}
       />
     </span>
