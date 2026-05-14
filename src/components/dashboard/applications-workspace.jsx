@@ -7,7 +7,6 @@ import DeleteApplicationModal from "@/components/modals/delete-application-modal
 import EditApplicationModal from "@/components/modals/edit-application-modal";
 import { useApplications } from "@/context/applications-context";
 import useApplicationStats from "@/hooks/use-application-stats";
-import useDueSoonFollowups from "@/hooks/use-due-soon-followups";
 import useUpcomingFollowups from "@/hooks/use-upcoming-follow-up";
 import { deleteApplication } from "@/lib/applications";
 import { isTerminalApplicationStatus } from "@/lib/application-statuses";
@@ -86,14 +85,15 @@ const getLatestFollowup = (application, followUps) => {
 export default function ApplicationsWorkspace({ refreshKey = 0 }) {
   const router = useRouter();
   const { applications, refetchApplications, isLoading } = useApplications();
-  const { followUps, refetchFollowups } = useUpcomingFollowups();
-  const { refetchDueSoonFollowups } = useDueSoonFollowups();
+  const { followUps, refetchFollowups } = useUpcomingFollowups({
+    autoFetch: true,
+  });
   const {
     stats,
     isLoading: isStatsLoading,
     error: statsError,
     refetchApplicationStats,
-  } = useApplicationStats();
+  } = useApplicationStats({ autoFetch: true });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sortBy, setSortBy] = useState("RECENTLY_UPDATED");
@@ -115,13 +115,11 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
     await Promise.all([
       refetchApplications(),
       refetchFollowups(),
-      refetchDueSoonFollowups(),
       refetchApplicationStats(),
     ]);
   }, [
     refetchApplicationStats,
     refetchApplications,
-    refetchDueSoonFollowups,
     refetchFollowups,
   ]);
 
@@ -132,11 +130,6 @@ export default function ApplicationsWorkspace({ refreshKey = 0 }) {
     },
     [handleRefreshAfterMutation],
   );
-
-  useEffect(() => {
-    if (!applications?.length) return;
-    refetchApplicationStats();
-  }, [applications?.length, refetchApplicationStats]);
 
   useEffect(() => {
     if (!refreshKey) return;
