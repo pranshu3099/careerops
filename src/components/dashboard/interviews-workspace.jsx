@@ -2,10 +2,7 @@ import Badge from "@/components/dashboard/badge";
 import InterviewFormModal from "@/components/modals/interview-form-modal";
 import InterviewResultModal from "@/components/modals/interview-result-modal";
 import { useApplications } from "@/context/applications-context";
-import useApplicationStats from "@/hooks/use-application-stats";
 import useAllApplicationInterviews from "@/hooks/use-all-application-interviews";
-import useDueSoonFollowups from "@/hooks/use-due-soon-followups";
-import useUpcomingFollowups from "@/hooks/use-upcoming-follow-up";
 import { updateApplicationStatus } from "@/lib/applications";
 import { isTerminalApplicationStatus } from "@/lib/application-statuses";
 import {
@@ -14,6 +11,7 @@ import {
   getNextRound,
 } from "@/lib/interview-rounds";
 import { cancelInterview } from "@/lib/interviews";
+import { requestNotificationsRefresh } from "@/lib/notifications";
 import {
   CalendarClock,
   ChevronDown,
@@ -77,13 +75,10 @@ const Pill = ({ children, className }) => (
 
 export default function InterviewsWorkspace({ refreshKey = 0 }) {
   const { applications, refetchApplications } = useApplications();
-  const { refetchFollowups } = useUpcomingFollowups();
-  const { refetchDueSoonFollowups } = useDueSoonFollowups();
-  const { refetchApplicationStats } = useApplicationStats();
   const { applicationInterviews, isLoading, error, refetchAllInterviews } =
     useAllApplicationInterviews(applications);
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("SOONEST");
+  const [sortBy, setSortBy] = useState("LATEST");
   const [formState, setFormState] = useState({
     open: false,
     mode: "create",
@@ -95,20 +90,18 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
   const [proceedOpenId, setProceedOpenId] = useState("");
   const handledRefreshKeyRef = useRef(0);
 
-  const refreshAll = useCallback(async () => {
+  const refreshAll = useCallback(async ({ refreshNotifications = false } = {}) => {
     await Promise.all([
       refetchAllInterviews(),
       refetchApplications(),
-      refetchFollowups(),
-      refetchDueSoonFollowups(),
-      refetchApplicationStats(),
     ]);
+
+    if (refreshNotifications) {
+      requestNotificationsRefresh();
+    }
   }, [
     refetchAllInterviews,
-    refetchApplicationStats,
     refetchApplications,
-    refetchDueSoonFollowups,
-    refetchFollowups,
   ]);
 
   useEffect(() => {
@@ -181,7 +174,7 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
     try {
       await updateApplicationStatus(application.id, newStatus);
       setProceedOpenId("");
-      await refreshAll({ previousStatus: "INTERVIEWING", newStatus });
+      await refreshAll({ refreshNotifications: true });
       toast.success(`Moved to ${newStatus}`);
     } catch (err) {
       toast.error(err?.message || "Failed to update status");
@@ -191,7 +184,7 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
   const handleCancelInterview = async (interview) => {
     try {
       await cancelInterview(interview?.id || interview?.interviewId);
-      await refreshAll();
+      await refreshAll({ refreshNotifications: true });
       toast.success("Interview cancelled");
     } catch (err) {
       toast.error(err?.message || "Failed to cancel interview");
@@ -530,7 +523,7 @@ export default function InterviewsWorkspace({ refreshKey = 0 }) {
             round: 1,
           })
         }
-        onSaved={refreshAll}
+        onSaved={() => refreshAll({ refreshNotifications: true })}
       />
 
       <InterviewResultModal
