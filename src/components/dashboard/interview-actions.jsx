@@ -7,8 +7,12 @@ import { getAddRoundLabel, getLatestInterview } from "@/lib/interview-rounds";
 import { cancelInterview } from "@/lib/interviews";
 import { requestNotificationsRefresh } from "@/lib/notifications";
 import { ChevronDown, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
+
+const PROCEED_MENU_WIDTH = 152;
+const PROCEED_MENU_HEIGHT = 124;
 
 const isCompletedResult = (interview) =>
   interview?.status === "COMPLETED" &&
@@ -29,10 +33,70 @@ export default function InterviewActions({
   const [formState, setFormState] = useState({ open: false, round: 1 });
   const [resultTarget, setResultTarget] = useState(null);
   const [proceedOpen, setProceedOpen] = useState(false);
+  const [proceedMenuPosition, setProceedMenuPosition] = useState(null);
+  const [mounted, setMounted] = useState(false);
+  const proceedButtonRef = useRef(null);
+  const proceedMenuRef = useRef(null);
   const latestInterview = useMemo(
     () => getLatestInterview(interviews),
     [interviews],
   );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updateProceedMenuPosition = useCallback(() => {
+    const rect = proceedButtonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const belowTop = rect.bottom + 6;
+    const hasRoomBelow =
+      window.innerHeight - belowTop >= PROCEED_MENU_HEIGHT;
+    const top = hasRoomBelow
+      ? belowTop
+      : Math.max(8, rect.top - PROCEED_MENU_HEIGHT - 6);
+    const left = Math.max(
+      8,
+      Math.min(
+        rect.right - PROCEED_MENU_WIDTH,
+        window.innerWidth - PROCEED_MENU_WIDTH - 8,
+      ),
+    );
+
+    setProceedMenuPosition({
+      top,
+      left,
+      width: PROCEED_MENU_WIDTH,
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      const clickedButton = proceedButtonRef.current?.contains(event.target);
+      const clickedMenu = proceedMenuRef.current?.contains(event.target);
+
+      if (!clickedButton && !clickedMenu) {
+        setProceedOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  useEffect(() => {
+    if (!proceedOpen) return;
+
+    updateProceedMenuPosition();
+    window.addEventListener("scroll", updateProceedMenuPosition, true);
+    window.addEventListener("resize", updateProceedMenuPosition);
+
+    return () => {
+      window.removeEventListener("scroll", updateProceedMenuPosition, true);
+      window.removeEventListener("resize", updateProceedMenuPosition);
+    };
+  }, [proceedOpen, updateProceedMenuPosition]);
 
   const refreshAll = async (statusChange, { refreshNotifications = false } = {}) => {
     await Promise.all([
@@ -125,16 +189,29 @@ export default function InterviewActions({
       )}
 
       {showProceed && (
-        <span className="relative inline-flex">
+        <span className="inline-flex">
           <button
-            onClick={() => setProceedOpen((current) => !current)}
+            ref={proceedButtonRef}
+            onClick={() => {
+              updateProceedMenuPosition();
+              setProceedOpen((current) => !current);
+            }}
             className="inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 px-3 text-[11px] font-semibold leading-none text-emerald-600 ring-1 ring-emerald-100 transition-colors hover:bg-emerald-100"
           >
             Proceed further
             <ChevronDown className="h-3 w-3 shrink-0" />
           </button>
-          {proceedOpen && (
-            <div className="absolute right-0 top-7 z-[80] min-w-36 overflow-hidden rounded-xl border border-slate-100 bg-white py-1 text-left shadow-xl shadow-slate-200/80">
+          {mounted && proceedOpen && proceedMenuPosition && createPortal(
+            <div
+              ref={proceedMenuRef}
+              style={{
+                position: "fixed",
+                top: proceedMenuPosition.top,
+                left: proceedMenuPosition.left,
+                width: proceedMenuPosition.width,
+              }}
+              className="z-[11000] overflow-hidden rounded-xl border border-slate-100 bg-white py-1 text-left shadow-xl shadow-slate-200/80"
+            >
               <button
                 onClick={() => {
                   setProceedOpen(false);
@@ -156,7 +233,8 @@ export default function InterviewActions({
               >
                 Rejected
               </button>
-            </div>
+            </div>,
+            document.body,
           )}
         </span>
       )}
