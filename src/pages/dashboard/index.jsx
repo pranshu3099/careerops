@@ -14,7 +14,9 @@ export default function DashboardPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { userName } = useCurrentUser();
   const { applications } = useApplications();
-  const { followUps, refetchFollowups } = useUpcomingFollowups();
+  const { followUps, refetchFollowups } = useUpcomingFollowups({
+    autoFetch: true,
+  });
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
