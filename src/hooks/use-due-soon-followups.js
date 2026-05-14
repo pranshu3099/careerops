@@ -14,7 +14,7 @@ const sortByScheduledAt = (followups) =>
     },
   );
 
-export default function useDueSoonFollowups() {
+export default function useDueSoonFollowups({ autoFetch = false } = {}) {
   const [dueSoonFollowups, setDueSoonFollowups] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -46,12 +46,15 @@ export default function useDueSoonFollowups() {
 
   useEffect(() => {
     isMountedRef.current = true;
-    refetchDueSoonFollowups();
+
+    if (autoFetch) {
+      refetchDueSoonFollowups();
+    }
 
     return () => {
       isMountedRef.current = false;
     };
-  }, [refetchDueSoonFollowups]);
+  }, [autoFetch, refetchDueSoonFollowups]);
 
   return {
     dueSoonFollowups,
