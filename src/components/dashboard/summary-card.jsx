@@ -12,7 +12,7 @@ export default function SummaryCards() {
     isLoading: isStatsLoading,
     error: statsError,
     refetchApplicationStats,
-  } = useApplicationStats();
+  } = useApplicationStats({ autoFetch: true });
   const [scheduledInterviews, setScheduledInterviews] = useState(0);
   const [isInterviewsLoading, setIsInterviewsLoading] = useState(false);
   const [interviewsError, setInterviewsError] = useState("");
