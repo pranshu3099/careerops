@@ -1,7 +1,7 @@
 import {getUpcomingFollowups } from "@/lib/applications";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export default function useUpcomingFollowups() {
+export default function useUpcomingFollowups({ autoFetch = false } = {}) {
   const [followUps, setFollowUps] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -33,12 +33,14 @@ export default function useUpcomingFollowups() {
   useEffect(() => {
     isMountedRef.current = true;
 
-    refetchFollowups();
+    if (autoFetch) {
+      refetchFollowups();
+    }
 
     return () => {
       isMountedRef.current = false;
     };
-  }, [refetchFollowups]);
+  }, [autoFetch, refetchFollowups]);
 
   return { followUps, isLoading, error, refetchFollowups };
 }
