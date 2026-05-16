@@ -12,8 +12,8 @@ const getSafeRedirectPath = (value) => {
   return value;
 };
 
-export default function AuthScreen() {
-  const [mode, setMode] = useState("login");
+export default function AuthScreen({ initialMode = "login" }) {
+  const [mode, setMode] = useState(initialMode);
   const [loginerror, setLoginError] = useState("");
   const [signuperror, setSignupError] = useState("");
   const [isLoginLoading, setIsLoginLoading] = useState(false);
@@ -21,6 +21,14 @@ export default function AuthScreen() {
   const isLogin = mode === "login";
   const router = useRouter();
   const redirectPath = getSafeRedirectPath(router.query?.next);
+  const switchMode = (nextMode) => {
+    setMode(nextMode);
+    router.push({
+      pathname: nextMode === "signup" ? "/signup" : "/login",
+      query: router.query?.next ? { next: router.query.next } : {},
+    });
+  };
+
   const handleGoogleAuth = () => {
     window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google`;
   };
@@ -69,7 +77,7 @@ export default function AuthScreen() {
           <div className="flex border-b border-gray-200 mb-6">
             <button
               type="button"
-              onClick={() => setMode("login")}
+              onClick={() => switchMode("login")}
               className={`flex-1 pb-3 text-sm font-medium transition-colors ${
                 isLogin
                   ? "text-gray-900 border-b-2 border-gray-900"
@@ -80,7 +88,7 @@ export default function AuthScreen() {
             </button>
             <button
               type="button"
-              onClick={() => setMode("signup")}
+              onClick={() => switchMode("signup")}
               className={`flex-1 pb-3 text-sm font-medium transition-colors ${
                 !isLogin
                   ? "text-gray-900 border-b-2 border-gray-900"
@@ -163,7 +171,7 @@ export default function AuthScreen() {
           {isLogin ? "Don't have an account? " : "Already have an account? "}
           <button
             type="button"
-            onClick={() => setMode(isLogin ? "signup" : "login")}
+            onClick={() => switchMode(isLogin ? "signup" : "login")}
             className="text-gray-900 font-medium hover:underline"
           >
             {isLogin ? "Sign up" : "Login"}
