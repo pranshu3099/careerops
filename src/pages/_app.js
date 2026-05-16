@@ -13,7 +13,8 @@ import { Toaster } from "react-hot-toast";
 import DashboardSkeleton from "@/Dashboardskeleton";
 
 let authInitPromise = null;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001";
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL || "https://careerops.pranshu.dev";
 
 const isProtectedRoute = (pathname) => pathname.startsWith("/dashboard");
 const isAuthRoute = (pathname) => pathname === "/login" || pathname === "/signup";
@@ -110,9 +111,12 @@ export default function App({ Component, pageProps }) {
           content="Track job applications, interviews, follow-ups, offers, and hiring pipeline analytics in one organized dashboard."
         />
         <meta property="og:site_name" content="CareerOps" />
-        <meta property="og:image" content={`${APP_URL}/og-image.svg`} />
+        <meta property="og:image" content={`${APP_URL}/og-image.png`} />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:image" content={`${APP_URL}/og-image.svg`} />
+        <meta name="twitter:image" content={`${APP_URL}/og-image.png`} />
         {isRouteProtected && <meta name="robots" content="noindex,nofollow" />}
       </Head>
       <Toaster position="top-center" />
