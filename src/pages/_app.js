@@ -6,14 +6,17 @@ import {
 } from "@/lib/api";
 import { ApplicationsProvider } from "@/context/applications-context";
 import "@/styles/globals.css";
+import Head from "next/head";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { Toaster } from "react-hot-toast";
 import DashboardSkeleton from "@/Dashboardskeleton";
 
 let authInitPromise = null;
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001";
 
 const isProtectedRoute = (pathname) => pathname.startsWith("/dashboard");
+const isAuthRoute = (pathname) => pathname === "/login" || pathname === "/signup";
 
 const getSafeRedirectPath = (value) => {
   if (!value || typeof value !== "string") return "/dashboard";
@@ -43,7 +46,7 @@ export default function App({ Component, pageProps }) {
   const router = useRouter();
   const isAuthenticated = Boolean(getAccessToken());
   const isRouteProtected = isProtectedRoute(router.pathname);
-  const isLoginRoute = router.pathname === "/";
+  const isAuthenticationRoute = isAuthRoute(router.pathname);
   const redirectTarget = getSafeRedirectPath(router.query?.next);
 
   useEffect(() => {
@@ -66,7 +69,7 @@ export default function App({ Component, pageProps }) {
 
     if (isRouteProtected && !isAuthenticated) {
       router.replace({
-        pathname: "/",
+        pathname: "/login",
         query: {
           next: router.asPath,
         },
@@ -74,12 +77,12 @@ export default function App({ Component, pageProps }) {
       return;
     }
 
-    if (isLoginRoute && isAuthenticated) {
+    if (isAuthenticationRoute && isAuthenticated) {
       router.replace(redirectTarget);
     }
   }, [
     isAuthenticated,
-    isLoginRoute,
+    isAuthenticationRoute,
     isRouteProtected,
     loading,
     redirectTarget,
@@ -88,10 +91,22 @@ export default function App({ Component, pageProps }) {
 
   if (loading) return <DashboardSkeleton/>;
   if (isRouteProtected && !isAuthenticated) return <DashboardSkeleton />;
-  if (isLoginRoute && isAuthenticated) return <DashboardSkeleton />;
+  if (isAuthenticationRoute && isAuthenticated) return <DashboardSkeleton />;
 
   return (
     <>
+      <Head>
+        <title>CareerOps - Job Application Tracker</title>
+        <meta
+          name="description"
+          content="Track job applications, interviews, follow-ups, offers, and hiring pipeline analytics in one organized dashboard."
+        />
+        <meta property="og:site_name" content="CareerOps" />
+        <meta property="og:image" content={`${APP_URL}/og-image.svg`} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={`${APP_URL}/og-image.svg`} />
+        {isRouteProtected && <meta name="robots" content="noindex,nofollow" />}
+      </Head>
       <Toaster position="top-center" />
       {isRouteProtected ? (
         <ApplicationsProvider>
