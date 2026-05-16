@@ -9,7 +9,8 @@ import {
   LineChart,
 } from "lucide-react";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001";
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL || "https://careerops.pranshu.dev";
 
 const features = [
   {
@@ -74,14 +75,17 @@ export default function LandingPage() {
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={APP_URL} />
-        <meta property="og:image" content={`${APP_URL}/og-image.svg`} />
+        <meta property="og:image" content={`${APP_URL}/og-image.png`} />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="CareerOps - Job Application Tracker" />
         <meta
           name="twitter:description"
           content="Track job applications, interviews, follow-ups, and hiring pipeline progress."
         />
-        <meta name="twitter:image" content={`${APP_URL}/og-image.svg`} />
+        <meta name="twitter:image" content={`${APP_URL}/og-image.png`} />
         <link rel="canonical" href={APP_URL} />
         <script
           type="application/ld+json"
