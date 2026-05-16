@@ -1,6 +1,8 @@
 import { apiFetch } from "@/lib/api";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+const interviewsByApplicationRequests = new Map();
+let allInterviewsRequestPromise = null;
 
 const getResponseError = (payload, fallback) => {
   if (!payload) return fallback;
@@ -9,7 +11,7 @@ const getResponseError = (payload, fallback) => {
 
 const unwrapInterviewPayload = (payload) => payload?.data || payload?.interview || payload;
 
-export const getInterviewsByApplication = async (applicationId) => {
+const fetchInterviewsByApplication = async (applicationId) => {
   if (!applicationId) {
     throw new Error("Missing applicationId for interviews request");
   }
@@ -34,7 +36,27 @@ export const getInterviewsByApplication = async (applicationId) => {
   throw new Error("Invalid interviews response");
 };
 
-export const getAllInterviews = async () => {
+export const getInterviewsByApplication = async (applicationId) => {
+  if (!applicationId) {
+    throw new Error("Missing applicationId for interviews request");
+  }
+
+  const requestKey = String(applicationId);
+  const existingRequest = interviewsByApplicationRequests.get(requestKey);
+
+  if (existingRequest) {
+    return existingRequest;
+  }
+
+  const request = fetchInterviewsByApplication(applicationId).finally(() => {
+    interviewsByApplicationRequests.delete(requestKey);
+  });
+
+  interviewsByApplicationRequests.set(requestKey, request);
+  return request;
+};
+
+const fetchAllInterviews = async () => {
   const response = await apiFetch(`${BACKEND_URL}/interviews/`, {
     method: "GET",
     headers: {
@@ -50,6 +72,16 @@ export const getAllInterviews = async () => {
   if (Array.isArray(payload)) return payload;
 
   throw new Error("Invalid interviews response");
+};
+
+export const getAllInterviews = async () => {
+  if (!allInterviewsRequestPromise) {
+    allInterviewsRequestPromise = fetchAllInterviews().finally(() => {
+      allInterviewsRequestPromise = null;
+    });
+  }
+
+  return allInterviewsRequestPromise;
 };
 
 export const createInterview = async (interviewData) => {
