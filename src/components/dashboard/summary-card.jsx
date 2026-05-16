@@ -6,7 +6,7 @@ import { Award, Briefcase, Calendar, CheckCircle2, XCircle } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function SummaryCards() {
-  const { applications } = useApplications();
+  const { applications, isLoading: isApplicationsLoading } = useApplications();
   const {
     stats,
     isLoading: isStatsLoading,
@@ -17,7 +17,7 @@ export default function SummaryCards() {
   const [isInterviewsLoading, setIsInterviewsLoading] = useState(false);
   const [interviewsError, setInterviewsError] = useState("");
   const isMountedRef = useRef(false);
-  const previousApplicationsCountRef = useRef(applications?.length || 0);
+  const previousApplicationsCountRef = useRef(null);
 
   const refetchInterviewSummary = useCallback(async () => {
     try {
@@ -54,13 +54,25 @@ export default function SummaryCards() {
   }, [refetchInterviewSummary]);
 
   useEffect(() => {
+    if (isApplicationsLoading) return;
+
     const applicationsCount = applications?.length || 0;
+    if (previousApplicationsCountRef.current === null) {
+      previousApplicationsCountRef.current = applicationsCount;
+      return;
+    }
+
     if (previousApplicationsCountRef.current === applicationsCount) return;
 
     previousApplicationsCountRef.current = applicationsCount;
     refetchApplicationStats();
     refetchInterviewSummary();
-  }, [applications?.length, refetchApplicationStats, refetchInterviewSummary]);
+  }, [
+    applications?.length,
+    isApplicationsLoading,
+    refetchApplicationStats,
+    refetchInterviewSummary,
+  ]);
 
   const totalApplications = Object.values(stats || {}).reduce(
     (total, value) => total + (Number(value) || 0),
