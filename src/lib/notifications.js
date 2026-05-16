@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/api";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 export const NOTIFICATIONS_REFRESH_EVENT = "careerops:notifications-refresh";
+let unreadNotificationCountRequestPromise = null;
 
 const getResponseError = (payload, fallback) => {
   if (!payload) return fallback;
@@ -49,7 +50,7 @@ export const getNotifications = async () => {
   return Array.isArray(result) ? result : [];
 };
 
-export const getUnreadNotificationCount = async () => {
+const fetchUnreadNotificationCount = async () => {
   const result = await notificationRequest(
     "/notifications/unread-count",
     { method: "GET" },
@@ -57,6 +58,18 @@ export const getUnreadNotificationCount = async () => {
   );
 
   return Number(result?.unread) || 0;
+};
+
+export const getUnreadNotificationCount = async () => {
+  if (!unreadNotificationCountRequestPromise) {
+    unreadNotificationCountRequestPromise = fetchUnreadNotificationCount().finally(
+      () => {
+        unreadNotificationCountRequestPromise = null;
+      },
+    );
+  }
+
+  return unreadNotificationCountRequestPromise;
 };
 
 export const markNotificationRead = (notificationId) =>
