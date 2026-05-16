@@ -97,7 +97,10 @@ export default function App({ Component, pageProps }) {
     router,
   ]);
 
-  if (loading) return <DashboardSkeleton/>;
+  if (loading && (isRouteProtected || isAuthenticationRoute)) {
+    return <DashboardSkeleton />;
+  }
+
   if (isRouteProtected && !isAuthenticated) return <DashboardSkeleton />;
   if (isAuthenticationRoute && isAuthenticated) return <DashboardSkeleton />;
   if (isHomeRoute && isAuthenticated) return <DashboardSkeleton />;
