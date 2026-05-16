@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { X, Briefcase } from "lucide-react";
 import toast from "react-hot-toast";
 import { createApplication } from "@/lib/applications";
@@ -34,13 +34,13 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationCrea
     }
   }, [isOpen]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsVisible(false);
     setTimeout(() => {
       onClose();
       document.body.style.overflow = "visible";
     }, 250);
-  };
+  }, [onClose]);
 
   useEffect(() => {
     const handleEsc = (e) => {
@@ -48,7 +48,7 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationCrea
     };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
-  }, [isOpen]);
+  }, [handleClose, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -126,13 +126,13 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationCrea
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-250 ${
+      className={`fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-3 py-4 backdrop-blur-sm transition-opacity duration-250 sm:items-center sm:p-4 ${
         isVisible ? "opacity-100" : "opacity-0"
       }`}
       onClick={handleBackdropClick}
     >
       <div
-        className={`bg-white w-full max-w-xl rounded-2xl shadow-2xl shadow-slate-200 overflow-hidden transition-all duration-250 ease-out ${
+        className={`flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl shadow-slate-900/20 transition-all duration-250 ease-out sm:max-h-[calc(100dvh-3rem)] ${
           isVisible
             ? "opacity-100 scale-100 translate-y-0"
             : "opacity-0 scale-95 translate-y-4"
@@ -140,16 +140,16 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationCrea
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+        <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
+            <div className="hidden h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-50 sm:flex">
               <Briefcase className="w-4.5 h-4.5 text-indigo-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-base font-semibold text-slate-800">
                 Add New Application
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="mt-0.5 text-xs text-slate-400">
                 Track your latest job application
               </p>
             </div>
@@ -163,8 +163,12 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationCrea
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form
+          onSubmit={handleSubmit}
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Company */}
             <div className="md:col-span-2">
               <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
@@ -305,19 +309,20 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationCrea
                 name="notes"
                 value={formData.notes}
                 onChange={handleChange}
-                rows={3}
-                className={`${inputClass} resize-y`}
+                rows={2}
+                className={`${inputClass} max-h-32 resize-y`}
                 placeholder="Any additional notes, referral details, or reminders..."
               />
             </div>
           </div>
+          </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2 border-t border-slate-100">
+          <div className="flex flex-shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-white px-4 py-3 sm:flex-row sm:gap-3 sm:px-6">
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 py-2.5 text-sm text-slate-600 font-medium rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
+              className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
             >
               Cancel
             </button>
