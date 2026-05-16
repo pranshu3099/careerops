@@ -29,7 +29,7 @@ export default function ProfilePage() {
 
       if (response.ok) {
         toast.success("Logged out successfully");
-        router.push("/");
+        router.push("/login");
       }
     } finally {
       setIsLoggingOut(false);
