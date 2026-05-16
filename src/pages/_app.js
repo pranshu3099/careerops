@@ -47,6 +47,7 @@ export default function App({ Component, pageProps }) {
   const isAuthenticated = Boolean(getAccessToken());
   const isRouteProtected = isProtectedRoute(router.pathname);
   const isAuthenticationRoute = isAuthRoute(router.pathname);
+  const isHomeRoute = router.pathname === "/";
   const redirectTarget = getSafeRedirectPath(router.query?.next);
 
   useEffect(() => {
@@ -79,10 +80,16 @@ export default function App({ Component, pageProps }) {
 
     if (isAuthenticationRoute && isAuthenticated) {
       router.replace(redirectTarget);
+      return;
+    }
+
+    if (isHomeRoute && isAuthenticated) {
+      router.replace("/dashboard");
     }
   }, [
     isAuthenticated,
     isAuthenticationRoute,
+    isHomeRoute,
     isRouteProtected,
     loading,
     redirectTarget,
@@ -92,6 +99,7 @@ export default function App({ Component, pageProps }) {
   if (loading) return <DashboardSkeleton/>;
   if (isRouteProtected && !isAuthenticated) return <DashboardSkeleton />;
   if (isAuthenticationRoute && isAuthenticated) return <DashboardSkeleton />;
+  if (isHomeRoute && isAuthenticated) return <DashboardSkeleton />;
 
   return (
     <>
