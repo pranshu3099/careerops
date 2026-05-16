@@ -125,7 +125,7 @@ export default function Navbar({ onMobileMenuClick, onApplicationCreated }) {
       const res = await handleLogout();
 
       if (res.ok) {
-        router.push("/");
+        router.push("/login");
         toast.success("Logged out successfully");
         return;
       }
