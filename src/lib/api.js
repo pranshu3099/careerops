@@ -63,7 +63,7 @@ const redirectToLoginIfProtected = () => {
   if (!window.location.pathname.startsWith("/dashboard")) return;
 
   const nextPath = `${window.location.pathname}${window.location.search}`;
-  window.location.assign(`/?next=${encodeURIComponent(nextPath)}`);
+  window.location.assign(`/login?next=${encodeURIComponent(nextPath)}`);
 };
 
 export const authFetch = async (url, options = {}, hasRetriedCsrf = false) => {
