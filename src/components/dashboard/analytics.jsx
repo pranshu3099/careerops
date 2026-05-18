@@ -158,43 +158,73 @@ export default function Analytics() {
  
         <div>
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Status distribution</p>
-          <div className="h-64 flex items-center justify-center">
+          <div className="flex min-h-64 flex-col">
             {isLoading ? (
-              <div className="flex h-full w-full items-center justify-center rounded-xl bg-slate-50 text-sm text-slate-400">
+              <div className="flex h-64 w-full items-center justify-center rounded-xl bg-slate-50 text-sm text-slate-400">
                 Loading analytics...
               </div>
             ) : !hasApplications ? (
-              <div className="text-sm text-slate-400">
+              <div className="flex h-64 items-center justify-center text-sm text-slate-400">
                 No applications to analyze yet.
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={95}
-                    paddingAngle={3}
-                    dataKey="value"
-                    strokeWidth={0}
-                  >
-                    {statusData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend
-                    layout="vertical"
-                    verticalAlign="middle"
-                    align="right"
-                    iconType="circle"
-                    iconSize={8}
-                    formatter={(value) => <span style={{ fontSize: "12px", color: "#64748b" }}>{value}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              <>
+                <div className="h-56 w-full sm:h-60 lg:h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+                      <Pie
+                        data={statusData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius="48%"
+                        outerRadius="76%"
+                        paddingAngle={3}
+                        dataKey="value"
+                        strokeWidth={0}
+                      >
+                        {statusData.map((entry) => (
+                          <Cell key={entry.name} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend
+                        className="hidden lg:block"
+                        layout="vertical"
+                        verticalAlign="middle"
+                        align="right"
+                        iconType="circle"
+                        iconSize={8}
+                        formatter={(value) => (
+                          <span style={{ fontSize: "12px", color: "#64748b" }}>
+                            {value}
+                          </span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:hidden">
+                  {statusData.map((entry) => (
+                    <div
+                      key={entry.name}
+                      className="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                          style={{ backgroundColor: entry.color }}
+                        />
+                        <span className="truncate text-xs font-medium text-slate-600">
+                          {entry.name}
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold text-slate-500">
+                        {entry.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
